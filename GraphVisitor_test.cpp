@@ -40,8 +40,7 @@ namespace {
 
 class NodeWithProperty : public NodeBase {
 public:
-    NodeWithProperty (const std::string& wanted_name, Graph* graph)
-        : NodeBase(wanted_name, graph), A("int A", 1) { }
+    NodeWithProperty() : A("int A", 1) { }
 
     virtual int numProperty() const { return 1 + PropertyList::numProperty(); }
     virtual NamedProperty* property(int id) {
@@ -67,20 +66,20 @@ public:
     }
 
 protected:
-    virtual void onNode(NodeBase * node) {
+    virtual void onNode(std::shared_ptr<NodeBase> node) override {
         EXPECT_EQ("node prop int",node->name());
         nodeCount++;
     }
 
-    virtual void onStream(NodeBase * node, NamedStream * stream) {
+    virtual void onStream(std::shared_ptr<NodeBase> node, NamedStream * stream) override {
         EXPECT_TRUE(false) << "no stream in graph-should not pass here";
     }
     
-    virtual void onPin(NodeBase * node, NamedPin * pin) {
+    virtual void onPin(std::shared_ptr<NodeBase> node, NamedPin * pin) override {
         EXPECT_TRUE(false) << "no pin in graph-should not pass here";
     }
     
-    virtual void onProperty(NodeBase * node, NamedStream * stream, NamedPin * pin, NamedProperty * prop) {
+    virtual void onProperty(std::shared_ptr<NodeBase> node, NamedStream * stream, NamedPin * pin, NamedProperty * prop) override {
         if (node==0) {
             //test on graph property
             EXPECT_EQ("started",prop->name());
@@ -100,7 +99,7 @@ private:
 TEST(GraphVisitor, parseGraph) {
 
     Graph graph;
-    NodeWithProperty * node  = new NodeWithProperty("node prop int", &graph);
+    std::shared_ptr<NodeWithProperty> node  = graph.newNode<NodeWithProperty>("node prop int");
 
     GraphAnalyser grfAnal;
    

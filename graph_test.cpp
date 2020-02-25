@@ -65,8 +65,7 @@ class TimestampIncrementerStream : public StreamBase<int> {
 
 class IntProducerNode : public NodeBase {
   public:
-    IntProducerNode(const std::string& wanted_name, Graph* graph)
-        : NodeBase(wanted_name, graph), output_stream(this) { }
+    IntProducerNode() : output_stream(this) { }
 
     virtual int numOutputStream() const { return 1; }
     virtual const NamedStream* constOutputStream(int index) const {
@@ -80,8 +79,7 @@ class IntProducerNode : public NodeBase {
 
 class IntConsumerNode : public NodeBase {
   public:
-    IntConsumerNode(const std::string& wanted_name, Graph* graph)
-        : NodeBase(wanted_name, graph), input("int", this) { }
+    IntConsumerNode() : input("int", this) { }
 
     virtual int numInputPin() const { return 1; }
     virtual const NamedPin* constInputPin(int index) const {
@@ -127,8 +125,7 @@ class IntConsumerNode : public NodeBase {
 
 class ThreadedIntProducer : public ThreadedNodeBase {
   public:
-    ThreadedIntProducer(const std::string& wanted_name, Graph* graph)
-        : ThreadedNodeBase(wanted_name, graph),output_stream("out", this) { }
+    ThreadedIntProducer() : output_stream("out", this) { }
 
     virtual int threadMain() {
         int sequence_no = 0;
@@ -152,10 +149,8 @@ class ThreadedIntProducer : public ThreadedNodeBase {
 
 class ThreadedPassThrough : public ThreadedNodeBase {
   public:
-    ThreadedPassThrough(const std::string& wanted_name, Graph* graph)
-        : ThreadedNodeBase(wanted_name, graph),
-        output_stream("out", this),
-        input_stream("in", this) { }
+    ThreadedPassThrough()
+        : output_stream("out", this), input_stream("in", this) { }
 
     virtual int threadMain() {
         while (!threadMustQuit()) {
@@ -188,8 +183,7 @@ class ThreadedPassThrough : public ThreadedNodeBase {
 
 class JoinAndCheckEquals : public NodeBase {
   public:
-    JoinAndCheckEquals(const std::string& wanted_name, Graph* graph)
-        : NodeBase(wanted_name, graph), input_a("a", this), input_b("b", this) { }
+    JoinAndCheckEquals() : input_a("a", this), input_b("b", this) { }
 
     virtual int numInputPin() const { return 2; }
     virtual const NamedPin* constInputPin(int i) const {
@@ -226,8 +220,8 @@ class JoinAndCheckEquals : public NodeBase {
 TEST(GraphTest, NoThread) {
     Graph graph;
 
-    IntProducerNode *producer = new IntProducerNode("producer", &graph);
-    IntConsumerNode *consumer = new IntConsumerNode("consumer", &graph);
+    auto producer = graph.newNode<IntProducerNode>("producer");
+    auto consumer = graph.newNode<IntConsumerNode>("consumer");
     EXPECT_TRUE(graph.connect("producer", "Timestamp incrementer", "consumer", "int"));
 
     // Make sure "connect" does some verifications.
@@ -245,9 +239,9 @@ TEST(GraphTest, NoThread) {
 // producer -> filter -> consumer
 TEST(GraphTest, SimpleThreaded) {
     Graph graph;
-    ThreadedIntProducer *producer = new ThreadedIntProducer("producer", &graph);
-    ThreadedPassThrough *filter = new ThreadedPassThrough("filter", &graph);
-    IntConsumerNode *consumer = new IntConsumerNode("consumer", &graph);
+    auto producer = graph.newNode<ThreadedIntProducer>("producer");
+    auto filter = graph.newNode<ThreadedPassThrough>("filter");
+    auto consumer = graph.newNode<IntConsumerNode>("consumer");
 
     EXPECT_TRUE(graph.connect(producer, "out", filter, "in"));
     EXPECT_TRUE(graph.connect(filter, "out", consumer, "int"));
@@ -265,9 +259,9 @@ TEST(GraphTest, HotPlug) {
     graph.start();
 
     // We add nodes.
-    ThreadedIntProducer *producer = new ThreadedIntProducer("producer", &graph);
-    ThreadedPassThrough *filter = new ThreadedPassThrough("filter", &graph);
-    IntConsumerNode *consumer = new IntConsumerNode("consumer", &graph);
+    auto producer = graph.newNode<ThreadedIntProducer>("producer");
+    auto filter = graph.newNode<ThreadedPassThrough>("filter");
+    auto consumer = graph.newNode<IntConsumerNode>("consumer");
 
     EXPECT_TRUE(graph.connect(producer, "out", filter, "in"));
     EXPECT_TRUE(graph.connect(filter, "out", consumer, "int"));
@@ -285,7 +279,8 @@ TEST(GraphTest, HotPlug) {
     consumer->testReadFrom(Timestamp::now(), 10);
 
     // Waow, that's rude.
-    delete filter;
+    graph.removeNode("filter");
+    filter.reset();
 
     EXPECT_FALSE(consumer->isRunning());
 
@@ -311,10 +306,10 @@ TEST(GraphTest, HotPlug) {
 
 TEST(GraphTest, JoinSync) {
     Graph graph;
-    ThreadedIntProducer *producer = new ThreadedIntProducer("producer", &graph);
-    ThreadedPassThrough *filter_a = new ThreadedPassThrough("a", &graph);
-    ThreadedPassThrough *filter_b = new ThreadedPassThrough("b", &graph);
-    JoinAndCheckEquals *consumer = new JoinAndCheckEquals("consumer", &graph);
+    auto producer = graph.newNode<ThreadedIntProducer>("producer");
+    auto filter_a = graph.newNode<ThreadedPassThrough>("a");
+    auto filter_b = graph.newNode<ThreadedPassThrough>("b");
+    auto consumer = graph.newNode<JoinAndCheckEquals>("consumer");
 
     EXPECT_EQ(0, producer->getOutputStreamByName("out")->numReaders());
     EXPECT_TRUE(graph.connect(producer, "out", filter_a, "in"));

@@ -27,7 +27,7 @@
 #include "node.h"
 
 #include <assert.h>
-#include <string>
+
 #include <sstream>
 
 #include "graph.h"
@@ -36,20 +36,20 @@
 
 namespace media_graph {
 
-NodeBase::NodeBase(const std::string& wanted_name, Graph* graph) : graph_(graph) {
-    assert(graph);
+NodeBase::NodeBase() : graph_(nullptr) { }
 
-    running_ = false;
-    name_ = wanted_name;
-    for (int i = 0; !graph->addNode(name_, this); ++i) {
-        std::ostringstream oss;
-        oss << wanted_name << i;
-        name_ = oss.str();
+bool NodeBase::setNameAndGraph(const std::string& new_name, Graph* new_graph) {
+    if (this->graph_) {
+        // already added.
+        return false;
     }
+    graph_ = new_graph;
+    name_ = new_name;
+    return true;
 }
 
 NodeBase::~NodeBase() {
-    graph_->removeNode(this);
+    if (graph_) { graph_->removeNode(name_); }
 }
 
 bool NodeBase::start() {
@@ -170,7 +170,7 @@ NamedPin* NodeBase::getInputPinByName(const std::string& name) {
 }
 
 ThreadedNodeBase::~ThreadedNodeBase() {
-    graph()->removeNode(this);
+    //graph()->removeNode(this);
 }
 
 bool ThreadedNodeBase::start() {

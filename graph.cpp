@@ -40,7 +40,7 @@ Graph::Graph() : started_(false) {
     addGetProperty("started", this, &Graph::isStarted);
 }
 
-bool Graph::addNode(const std::string& name, NodeBase* node) {
+bool Graph::addNode(const std::string& name, std::shared_ptr<NodeBase> node) {
     ScopedLock lock(&mutex_);
     assert(node != 0);
     if (lockedGetNodeByName(name) != 0) {
@@ -49,13 +49,14 @@ bool Graph::addNode(const std::string& name, NodeBase* node) {
     }
 
     nodes_[name] = node;
+    node->setNameAndGraph(name, this);
     return true;
 }
 
-void Graph::removeNode(NodeBase* node) {
+void Graph::removeNode(const std::string& name) {
     ScopedLock lock(&mutex_);
 
-    std::map<string, NodeBase*>::iterator it = nodes_.find(node->name());
+    auto it = nodes_.find(name);
     if (it != nodes_.end()) {
         it->second->disconnectAllPins();
         it->second->disconnectAllStreams();
@@ -63,13 +64,13 @@ void Graph::removeNode(NodeBase* node) {
     }
 }
 
-NodeBase* Graph::getNodeByName(const std::string& name) {
+std::shared_ptr<NodeBase> Graph::getNodeByName(const std::string& name) {
     ScopedLock lock(&mutex_);
     return lockedGetNodeByName(name);
 }
 
-NodeBase* Graph::lockedGetNodeByName(const std::string& name) {
-    std::map<string, NodeBase*>::iterator it = nodes_.find(name);
+std::shared_ptr<NodeBase> Graph::lockedGetNodeByName(const std::string& name) {
+    auto it = nodes_.find(name);
     if (it != nodes_.end()) {
         return it->second;
     }
@@ -82,7 +83,7 @@ bool Graph::start() {
     }
 
     ScopedLock lock(&mutex_);
-    for (std::map<string, NodeBase*>::iterator it = nodes_.begin();
+    for (auto it = nodes_.begin();
          it != nodes_.end(); ++it) {
         if (!it->second->start()) {
             // TODO: give a meaningful error.
@@ -100,7 +101,7 @@ void Graph::stop() {
 }
 
 void Graph::lockedStop() {
-    for (std::map<string, NodeBase*>::iterator it = nodes_.begin();
+    for (auto it = nodes_.begin();
          it != nodes_.end(); ++it) {
         it->second->closeConnectedPins();
         it->second->stop();
@@ -110,8 +111,8 @@ void Graph::lockedStop() {
 void Graph::clear() {
     stop();
 
-    while (nodes_.size() > 0) {
-        delete nodes_.begin()->second;
+    while (nodes_.size()) {
+        nodes_.erase(nodes_.begin());
     }
 }
 
@@ -127,8 +128,10 @@ bool Graph::connect(NamedStream* stream, NamedPin* pin) {
     return pin->connect(stream);
 }
 
-bool Graph::connect(NodeBase* source, const std::string& streamName,
-                    NodeBase* dest, const std::string& pinName) {
+bool Graph::connect(std::shared_ptr<NodeBase> source,
+                    const std::string& streamName,
+                    std::shared_ptr<NodeBase> dest,
+                    const std::string& pinName) {
     if (!source || !dest) {
         return false;
     }
@@ -143,11 +146,11 @@ bool Graph::connect(const std::string& source_name, const std::string& streamNam
                    getNodeByName(dest_name), pinName);
 }
 
-NodeBase* Graph::node(int num) const {
-    std::map<std::string, NodeBase*>::const_iterator it = nodes_.begin();
+std::shared_ptr<NodeBase> Graph::node(int num) const {
+    auto it = nodes_.begin();
     for (int i = 0; i < num; ++i) {
         if (it == nodes_.end()) {
-            return 0;
+            return nullptr;
         }
         ++it;
     }

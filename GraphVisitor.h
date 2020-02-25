@@ -40,10 +40,10 @@ namespace media_graph {
         void visit(Graph * graph);
 
     protected:
-        virtual void onNode(NodeBase * node) {}
-        virtual void onStream(NodeBase * node, NamedStream * stream) {}
-        virtual void onPin(NodeBase * node, NamedPin * pin) {}
-        virtual void onProperty(NodeBase * node, NamedStream * stream, NamedPin * pin, NamedProperty * prop) {}  
+        virtual void onNode(std::shared_ptr<NodeBase> node) {}
+        virtual void onStream(std::shared_ptr<NodeBase> node, NamedStream * stream) {}
+        virtual void onPin(std::shared_ptr<NodeBase> node, NamedPin * pin) {}
+        virtual void onProperty(std::shared_ptr<NodeBase> node, NamedStream * stream, NamedPin * pin, NamedProperty * prop) {}  
 
     };
 
