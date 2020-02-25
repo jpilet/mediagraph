@@ -48,8 +48,9 @@ class Mutex {
 class ScopedLock {
   public:
     ScopedLock(Mutex* mutex) : mutex_(mutex) { mutex->lock(); }
-    ~ScopedLock() { mutex_->unlock(); }
+    ~ScopedLock() { if (mutex_) { mutex_->unlock(); } }
 
+    void unlock() { mutex_->unlock(); mutex_ = nullptr; }
   private:
     ScopedLock(const ScopedLock&) { }
     ScopedLock& operator = (const ScopedLock&) { return *this; }

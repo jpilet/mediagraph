@@ -112,6 +112,9 @@ class NodeBase : public PropertyList {
     /// Fails if if the node is already part of a graph.
     bool setNameAndGraph(const std::string& name, Graph* graph);
 
+    // unplug the node from the graph.
+    void detach();
+
   private:
     ConditionVariable pin_activity_;
     Mutex pin_activity_mutex_;

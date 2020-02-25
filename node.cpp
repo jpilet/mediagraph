@@ -38,18 +38,8 @@ namespace media_graph {
 
 NodeBase::NodeBase() : graph_(nullptr) { }
 
-bool NodeBase::setNameAndGraph(const std::string& new_name, Graph* new_graph) {
-    if (this->graph_) {
-        // already added.
-        return false;
-    }
-    graph_ = new_graph;
-    name_ = new_name;
-    return true;
-}
-
 NodeBase::~NodeBase() {
-    if (graph_) { graph_->removeNode(name_); }
+    detach();
 }
 
 bool NodeBase::start() {
@@ -142,6 +132,24 @@ void NodeBase::closeAllStreams() {
     int num_streams = numOutputStream();
     for (int i = 0; i < num_streams; ++i) {
         outputStream(i)->close();
+    }
+}
+
+bool NodeBase::setNameAndGraph(const std::string& new_name, Graph* new_graph) {
+    if (this->graph_) {
+        // already added.
+        return false;
+    }
+    graph_ = new_graph;
+    name_ = new_name;
+    return true;
+}
+
+void NodeBase::detach() {
+    if (graph_) {
+        graph_->removeNode(name_);
+        graph_ = nullptr;
+        name_ = "";
     }
 }
 

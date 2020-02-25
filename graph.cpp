@@ -58,9 +58,14 @@ void Graph::removeNode(const std::string& name) {
 
     auto it = nodes_.find(name);
     if (it != nodes_.end()) {
-        it->second->disconnectAllPins();
-        it->second->disconnectAllStreams();
+        auto node = it->second;
         nodes_.erase(it);
+        
+        node->disconnectAllPins();
+        node->disconnectAllStreams();
+        
+        // Make sure to unlock before "node" is destroyed.
+        lock.unlock();
     }
 }
 
@@ -112,7 +117,7 @@ void Graph::clear() {
     stop();
 
     while (nodes_.size()) {
-        nodes_.erase(nodes_.begin());
+        removeNode(nodes_.begin()->first);
     }
 }
 
