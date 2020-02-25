@@ -42,8 +42,8 @@ Graph::Graph() : started_(false) {
 
 bool Graph::addNode(const std::string& name, std::shared_ptr<NodeBase> node) {
     ScopedLock lock(&mutex_);
-    assert(node != 0);
-    if (lockedGetNodeByName(name) != 0) {
+    assert(node);
+    if (lockedGetNodeByName(name)) {
         // We do not accept two nodes with the same name.
         return false;
     }
@@ -79,7 +79,7 @@ std::shared_ptr<NodeBase> Graph::lockedGetNodeByName(const std::string& name) {
     if (it != nodes_.end()) {
         return it->second;
     }
-    return 0;
+    return std::shared_ptr<NodeBase>();
 }
 
 bool Graph::start() {
@@ -127,8 +127,8 @@ bool Graph::connect(NamedStream* stream, NamedPin* pin) {
     }
 
     // We allow streams and pins not belonging to any node.
-    assert(stream->node() == 0 || stream->node()->graph() == this);
-    assert(pin->node() == 0 || pin->node()->graph() == this);
+    assert(!stream->node() || stream->node()->graph() == this);
+    assert(!pin->node() || pin->node()->graph() == this);
  
     return pin->connect(stream);
 }
