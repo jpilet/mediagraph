@@ -1,6 +1,8 @@
 project(mediagraph)
 cmake_minimum_required(VERSION 3.14.0)
 
+set (CMAKE_CXX_STANDARD 11)
+
 find_package(Threads REQUIRED)
 find_package(GTest)
 
@@ -64,6 +66,7 @@ add_library(mediaGraph
     target_link_libraries(mediaGraph
                           mediaGraphTypes
                           timestamp
+                          thread_primitives
                          )
     set_property(TARGET mediaGraph PROPERTY FOLDER "mediaGraph")
 
