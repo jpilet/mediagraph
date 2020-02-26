@@ -43,10 +43,8 @@ class NamedPin;
  */
 class NodeBase : public PropertyList {
   public:
-    /// Construct a node, and add it to the graph. Try to name the node with
-    /// the given <wanted_name>. If a node already exists with that name, another
-    /// name might be given to the node.
-    NodeBase(const std::string& wanted_name, Graph* graph);
+    NodeBase();
+
     virtual ~NodeBase();
 
     /// Tries to start the node.
@@ -110,6 +108,13 @@ class NodeBase : public PropertyList {
     const std::string& name() const { return name_; }
     Graph* graph() const { return graph_; }
 
+    /// Sets the node membership to a graph. Called by Graph::addNode() only.
+    /// Fails if if the node is already part of a graph.
+    bool setNameAndGraph(const std::string& name, Graph* graph);
+
+    // unplug the node from the graph.
+    void detach();
+
   private:
     ConditionVariable pin_activity_;
     Mutex pin_activity_mutex_;
@@ -123,8 +128,6 @@ class NodeBase : public PropertyList {
  */
 class ThreadedNodeBase : public NodeBase {
   public:
-    ThreadedNodeBase(const std::string& wanted_name, Graph* graph)
-        : NodeBase(wanted_name, graph) { }
     virtual ~ThreadedNodeBase();
 
     // Starts all output streams + the thread.

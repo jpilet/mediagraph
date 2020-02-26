@@ -24,7 +24,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
-// Julien.Pilet@aptarism.com, 2012.
+// Julien.Pilet@gmail.com, 2012, 2020.
 #ifndef MEDIAGRAPH_GRAPH_H
 #define MEDIAGRAPH_GRAPH_H
 
@@ -34,6 +34,8 @@
 
 #include <string>
 #include <map>
+#include <memory>
+#include <sstream>
 
 namespace media_graph {
 
@@ -69,11 +71,11 @@ class Graph : public PropertyList {
     Graph();
     ~Graph() { clear(); }
 
-    /*! Adds a node to the graph. The graph takes ownership of <node> and will
-     *  delete it when clear() is called or on graph destruction.
-     *
-     *  In normal circumstances, addNode should only be called by the NodeBase
-     *  constructor.
+    /// Construct a new node, add it to the graph, and returns a shared_ptr.
+    template<typename T, typename ... Args>
+    std::shared_ptr<T> newNode(const std::string& wanted_name, Args && ... args);
+
+    /*! Adds a node to the graph.
      *
      *  Once added, a node can be retrieved using its name with getNodeByName.
      *
@@ -83,18 +85,18 @@ class Graph : public PropertyList {
      *  Returns true on success. Returns false if a node <name> already exists
      *  in the graph.
      */
-    bool addNode(const std::string& name, NodeBase* node);
+    bool addNode(const std::string& name, std::shared_ptr<NodeBase> node);
 
     /*! Removes a node from the node list. The easiest way to remove a node
      *  in practice is to delete it directly, the destructor will call
      *  removeNode().
      */
-    void removeNode(NodeBase* node);
+    void removeNode(const std::string& name);
 
     /*! Returns the node that was previously added with the given name. If no
      *  matching node is found, returns 0.
      */
-    NodeBase* getNodeByName(const std::string& name);
+    std::shared_ptr<NodeBase> getNodeByName(const std::string& name);
 
     /*! Adds an edge to the graph.
      *  Connects the output stream called <streamName> of source node <source>
@@ -107,8 +109,8 @@ class Graph : public PropertyList {
      */
     bool connect(NamedStream* stream, NamedPin* pin);
 
-    bool connect(NodeBase* source, const std::string& streamName,
-                 NodeBase* dest, const std::string& pinName);
+    bool connect(std::shared_ptr<NodeBase> source, const std::string& streamName,
+                 std::shared_ptr<NodeBase> dest, const std::string& pinName);
 
     //! Adds an edge to the graph.
     bool connect(const std::string& source, const std::string& streamName,
@@ -133,22 +135,36 @@ class Graph : public PropertyList {
 
     int numNodes() const { return nodes_.size(); }
 
-    NodeBase* node(int num) const;
+    std::shared_ptr<NodeBase> node(int num) const;
 
   private:
     // Stop the graph, assumes mutex_ is already aquired.
     void lockedStop();
-    NodeBase* lockedGetNodeByName(const std::string& name);
+    std::shared_ptr<NodeBase> lockedGetNodeByName(const std::string& name);
 
     Graph(const Graph&) { }  // copy constructor is forbidden.
 
 
-    std::map<std::string, NodeBase*> nodes_;
+    std::map<std::string, std::shared_ptr<NodeBase>> nodes_;
     bool started_;
 
     // Protects nodes_ against node addition and removal from multiple threads.
     Mutex mutex_;
 };
+
+
+template<typename T, typename ... Args>
+std::shared_ptr<T> Graph::newNode(const std::string& wanted_name, Args && ... args) {
+    std::shared_ptr<T> ptr = std::make_shared<T>(args...);
+
+    std::string try_name = wanted_name;
+    for (int i = 0; !addNode(try_name, ptr); ++i) {
+        std::ostringstream oss;
+        oss << wanted_name << i;
+        try_name = oss.str();
+    }
+    return ptr;
+}
 
 }  // namespace media_graph
 

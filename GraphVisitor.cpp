@@ -36,7 +36,7 @@ void GraphVisitor::visit(Graph * graph) {
     }
 
     for (int i=0; i < graph->numNodes(); i++) {
-        NodeBase * node = graph->node(i);
+        std::shared_ptr<NodeBase> node = graph->node(i);
         onNode(node);
 
         for (int j=0; j < node->numProperty(); j++) {

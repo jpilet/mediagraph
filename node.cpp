@@ -27,7 +27,7 @@
 #include "node.h"
 
 #include <assert.h>
-#include <string>
+
 #include <sstream>
 
 #include "graph.h"
@@ -36,20 +36,10 @@
 
 namespace media_graph {
 
-NodeBase::NodeBase(const std::string& wanted_name, Graph* graph) : graph_(graph) {
-    assert(graph);
-
-    running_ = false;
-    name_ = wanted_name;
-    for (int i = 0; !graph->addNode(name_, this); ++i) {
-        std::ostringstream oss;
-        oss << wanted_name << i;
-        name_ = oss.str();
-    }
-}
+NodeBase::NodeBase() : graph_(nullptr) { }
 
 NodeBase::~NodeBase() {
-    graph_->removeNode(this);
+    detach();
 }
 
 bool NodeBase::start() {
@@ -145,6 +135,24 @@ void NodeBase::closeAllStreams() {
     }
 }
 
+bool NodeBase::setNameAndGraph(const std::string& new_name, Graph* new_graph) {
+    if (this->graph_) {
+        // already added.
+        return false;
+    }
+    graph_ = new_graph;
+    name_ = new_name;
+    return true;
+}
+
+void NodeBase::detach() {
+    if (graph_) {
+        graph_->removeNode(name_);
+        graph_ = nullptr;
+        name_ = "";
+    }
+}
+
 NamedStream* NodeBase::getOutputStreamByName(const std::string& name) {
     int num_streams = numOutputStream();
     for (int i = 0; i < num_streams; ++i) {
@@ -170,7 +178,7 @@ NamedPin* NodeBase::getInputPinByName(const std::string& name) {
 }
 
 ThreadedNodeBase::~ThreadedNodeBase() {
-    graph()->removeNode(this);
+    //graph()->removeNode(this);
 }
 
 bool ThreadedNodeBase::start() {
