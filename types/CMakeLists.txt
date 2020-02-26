@@ -8,10 +8,8 @@ add_library(mediaGraphTypes
     set_property(TARGET mediaGraphTypes PROPERTY FOLDER "mediaGraph/types")
 
 
-cxx_test(binary_serializer_test binary_serializer_test.cpp
+cxx_test(binary_serializer_test "mediaGraph/types" binary_serializer_test.cpp
          mediaGraphTypes)
-    set_property(TARGET binary_serializer_test PROPERTY FOLDER "mediaGraph/types")
 
-cxx_test(string_serializer_test string_serializer_test.cpp
+cxx_test(string_serializer_test "mediaGraph/types" string_serializer_test.cpp
          mediaGraphTypes)
-    set_property(TARGET string_serializer_test PROPERTY FOLDER "mediaGraph/types")
