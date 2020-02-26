@@ -10,12 +10,13 @@ if (GTEST_FOUND)
   enable_testing()
 endif(GTEST_FOUND)
 
-function(cxx_test name sources)
+function(cxx_test name folder sources)
   if (GTEST_FOUND)
     add_executable(${name} ${sources})
     target_link_libraries(${name} ${ARGN} GTest::GTest GTest::Main)
     # Working directory: where the dlls are installed.
     add_test(NAME ${name} COMMAND $<TARGET_FILE:${name}> )
+    set_property(TARGET ${name} PROPERTY FOLDER ${folder})
   endif(GTEST_FOUND)
 endfunction()
 
@@ -33,9 +34,8 @@ add_library(thread_primitives
         )
     set_property(TARGET thread_primitives PROPERTY FOLDER "base")
 
-cxx_test(thread_primitives_test thread_primitives_test.cpp
+cxx_test(thread_primitives_test "base" thread_primitives_test.cpp
          thread_primitives timestamp)
-    set_property(TARGET thread_primitives_test PROPERTY FOLDER "base")
 
 if (WIN32)
     set(TIMESTAMP_PLATFORM "win32")
@@ -49,8 +49,7 @@ add_library(timestamp
            )
     set_property(TARGET timestamp PROPERTY FOLDER "base")
 
-cxx_test(timestamp_test timestamp_test.cpp timestamp)
-    set_property(TARGET timestamp_test PROPERTY FOLDER "base")
+cxx_test(timestamp_test "base" timestamp_test.cpp timestamp)
 
 add_library(mediaGraph
             graph.cpp
@@ -70,11 +69,8 @@ add_library(mediaGraph
                          )
     set_property(TARGET mediaGraph PROPERTY FOLDER "mediaGraph")
 
-cxx_test(graph_test graph_test.cpp mediaGraph thread_primitives)
-    set_property(TARGET graph_test PROPERTY FOLDER "mediaGraph")
-
-cxx_test(property_test property_test.cpp mediaGraph mediaGraphTypes)
-    set_property(TARGET property_test PROPERTY FOLDER "mediaGraph")
+cxx_test(graph_test "mediaGraph" graph_test.cpp mediaGraph thread_primitives)
+cxx_test(property_test "mediaGraph" property_test.cpp mediaGraph mediaGraphTypes)
 
 add_library(GraphVisitor
             GraphVisitor.cpp
@@ -85,8 +81,7 @@ add_library(GraphVisitor
                          )
     set_property(TARGET GraphVisitor PROPERTY FOLDER "mediaGraph")
 
-cxx_test(GraphVisitor_test GraphVisitor_test.cpp mediaGraph GraphVisitor)
-    set_property(TARGET GraphVisitor_test PROPERTY FOLDER "mediaGraph")
+cxx_test(GraphVisitor_test "mediaGraph" GraphVisitor_test.cpp mediaGraph GraphVisitor)
 
 	
 	
