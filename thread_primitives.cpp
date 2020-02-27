@@ -29,8 +29,6 @@
 #include "thread_primitives.h"
 
 #include <chrono>
-#include <future>
-#include <thread>
 
 Thread::~Thread() {
     if (thread_.joinable()) {
