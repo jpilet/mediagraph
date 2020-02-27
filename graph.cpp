@@ -54,7 +54,9 @@ bool Graph::addNode(const std::string& name, std::shared_ptr<NodeBase> node) {
 }
 
 void Graph::removeNode(const std::string& name) {
-    std::lock_guard<std::mutex> lock(mutex_);
+    // TODO: if we move to C++14, use std::make_unique()
+    auto lock = std::unique_ptr<std::lock_guard<std::mutex>>(
+        new std::lock_guard<std::mutex>(mutex_));
 
     auto it = nodes_.find(name);
     if (it != nodes_.end()) {
@@ -65,7 +67,7 @@ void Graph::removeNode(const std::string& name) {
         node->disconnectAllStreams();
         
         // Make sure to unlock before "node" is destroyed.
-        lock.~lock_guard();
+        lock = nullptr;
     }
 }
 
