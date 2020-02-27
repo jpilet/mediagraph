@@ -48,7 +48,7 @@ class Thread {
     Thread() = default;
     ~Thread();
 
-    bool start(int (*func)(void *), void *ptr);
+    bool start(void (*func)(void *), void *ptr);
 
     bool isRunning() const;
 

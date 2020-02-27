@@ -36,7 +36,7 @@ Thread::~Thread() {
     }
 }
 
-bool Thread::start(int (*func)(void *), void *ptr) {
+bool Thread::start(void (*func)(void *), void *ptr) {
     if (isRunning()) {
         return false;
     }

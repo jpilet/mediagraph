@@ -127,7 +127,7 @@ class ThreadedIntProducer : public ThreadedNodeBase {
   public:
     ThreadedIntProducer() : output_stream("out", this) { }
 
-    virtual int threadMain() {
+    virtual void threadMain() {
         int sequence_no = 0;
         while (!threadMustQuit()) {
             // push as fast as we can.
@@ -136,7 +136,6 @@ class ThreadedIntProducer : public ThreadedNodeBase {
                 break;
             ++sequence_no;
         }
-        return 0;
     }
     virtual int numOutputStream() const { return 1; }
     virtual const NamedStream* constOutputStream(int index) const {
@@ -152,7 +151,7 @@ class ThreadedPassThrough : public ThreadedNodeBase {
     ThreadedPassThrough()
         : output_stream("out", this), input_stream("in", this) { }
 
-    virtual int threadMain() {
+    virtual void threadMain() {
         while (!threadMustQuit()) {
             int data;
             Timestamp timestamp;
@@ -163,7 +162,6 @@ class ThreadedPassThrough : public ThreadedNodeBase {
                 break;
             }
         }
-        return 0;
     }
 
     virtual int numInputPin() const { return 1; }

@@ -215,10 +215,9 @@ bool ThreadedNodeBase::isRunning() const {
     return NodeBase::isRunning() && thread_.isRunning();
 }
 
-int ThreadedNodeBase::threadEntryPoint(void *ptr) {
+void ThreadedNodeBase::threadEntryPoint(void *ptr) {
     ThreadedNodeBase* instance = static_cast<ThreadedNodeBase*>(ptr);
-    int ret_val = instance->threadMain();
-    return ret_val;
+    instance->threadMain();
 }
 
 }  // namespace media_graph

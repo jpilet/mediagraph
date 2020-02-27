@@ -145,12 +145,12 @@ class ThreadedNodeBase : public NodeBase {
     /*! Inheriting classes must implement a thread loop, in the form:
      *  while (!threadMustQuit()) { }
      */
-    virtual int threadMain() = 0;
+    virtual void threadMain() = 0;
 
     bool threadMustQuit() const { return thread_must_quit_; }
 
   private:
-    static int threadEntryPoint(void *ptr);
+    static void threadEntryPoint(void *ptr);
     Thread thread_;
     bool thread_must_quit_;
 };
