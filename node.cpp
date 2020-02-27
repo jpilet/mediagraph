@@ -217,7 +217,6 @@ bool ThreadedNodeBase::isRunning() const {
 
 int ThreadedNodeBase::threadEntryPoint(void *ptr) {
     ThreadedNodeBase* instance = static_cast<ThreadedNodeBase*>(ptr);
-    Thread::setCurrentName(instance->name().c_str());
     int ret_val = instance->threadMain();
     return ret_val;
 }

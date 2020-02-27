@@ -20,17 +20,9 @@ function(cxx_test name folder sources)
   endif(GTEST_FOUND)
 endfunction()
 
-if (CMAKE_USE_WIN32_THREADS_INIT)
-    set(PLATFORM_SUFFIX "windows")
-elseif (CMAKE_USE_PTHREADS_INIT)
-    set(PLATFORM_SUFFIX "pthread")
-else (CMAKE_USE_WIN32_THREADS_INIT)
-    message(FATAL_ERROR "Can't find a pthread or windows threads.")
-endif (CMAKE_USE_WIN32_THREADS_INIT)
-
 add_library(thread_primitives
         thread_primitives.h
-        thread_primitives_${PLATFORM_SUFFIX}.cpp
+        thread_primitives.cpp
         )
     set_property(TARGET thread_primitives PROPERTY FOLDER "base")
 

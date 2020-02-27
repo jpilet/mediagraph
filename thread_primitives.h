@@ -28,6 +28,9 @@
 #ifndef THREAD_PRIMITIVES_H
 #define THREAD_PRIMITIVES_H
 
+#include <thread>
+#include <future>
+
 class ConditionVariablePrivate;
 class MutexPrivate;
 
@@ -72,21 +75,18 @@ class ConditionVariable {
 
 class Thread {
   public:
-    Thread();
+    Thread() = default;
     ~Thread();
 
     bool start(int (*func)(void *), void *ptr);
 
     bool isRunning() const;
 
-    // Returns the thread exit value, as returned by 'func' above.
-    // returns -1 if the thread has never been started.
-    int waitForTermination();
-
-    static void setCurrentName(const char *name);
+    void waitForTermination();
 
   private:
-    void* thread_handle;
+    std::thread thread_;
+    std::future<void> running_future_;  // used to signal thread has finished
 };
 
 

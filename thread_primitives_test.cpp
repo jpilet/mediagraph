@@ -37,7 +37,8 @@ static int return_arg(void *ptr) {
 TEST(ThreadTest, JoinValue) {
     Thread thread;
     EXPECT_TRUE(thread.start(return_arg, (void *)7));
-    EXPECT_EQ(7, thread.waitForTermination());
+    thread.waitForTermination();
+    EXPECT_FALSE(thread.isRunning());
 }
 
 TEST(ThreadTest, BasicCreation) {
@@ -80,7 +81,8 @@ TEST(ThreadTest, MultipleStarts) {
     // should work again.
     ASSERT_TRUE(thread.start(wait_a_bit, 0));
 
-    EXPECT_EQ(0, thread.waitForTermination());
+    thread.waitForTermination();
+    EXPECT_FALSE(thread.isRunning());
 }
 
 // Verify the behavior of isRunning().
@@ -103,7 +105,7 @@ TEST(ThreadTest, IsRunning) {
     // We waited long enough: the thread should have returned.
     EXPECT_FALSE(thread.isRunning());
 
-    EXPECT_EQ(0, thread.waitForTermination());
+    thread.waitForTermination();
     EXPECT_FALSE(thread.isRunning());
 }
 

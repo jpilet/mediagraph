@@ -28,21 +28,23 @@
 
 #include "thread_primitives.h"
 
-#include <pthread.h>
-#include <signal.h>
+#include <chrono>
+#include <condition_variable>
+#include <future>
+#include <memory>
+#include <mutex>
+#include <thread>
 
 class MutexPrivate {
   public:
-    MutexPrivate() { pthread_mutex_init(&mutex_, 0); }
-    ~MutexPrivate() { pthread_mutex_destroy(&mutex_); }
-    void lock() { pthread_mutex_lock(&mutex_); }
-    void unlock() { pthread_mutex_unlock(&mutex_); }
-    bool tryLock() { return pthread_mutex_trylock(&mutex_) == 0; }
+    void lock() { mutex_.lock(); }
+    bool tryLock() { return mutex_.try_lock(); }
+    void unlock() { mutex_.unlock(); }
 
-    pthread_mutex_t& mutex() { return mutex_; }
+    std::mutex& mutex() { return mutex_; }
 
   private:
-    pthread_mutex_t mutex_; 
+    std::mutex mutex_;
 };
 
 Mutex::Mutex() { impl_ = new MutexPrivate(); }
@@ -53,21 +55,18 @@ bool Mutex::tryLock() { return impl_->tryLock(); }
 
 class ConditionVariablePrivate {
   public:
-    ConditionVariablePrivate() {
-        pthread_cond_init(&condition_variable_, 0);
-    }
     void signal() {
-        pthread_cond_signal(&condition_variable_);
+        condvar_.notify_one();
     }
     void wakeAll() {
-        pthread_cond_broadcast(&condition_variable_);
+        condvar_.notify_all();
     }
     void wait(Mutex* mutex) {
-        pthread_cond_wait(&condition_variable_,
-                          &mutex->impl_->mutex());
+        std::unique_lock<std::mutex> ulock(mutex->impl_->mutex(), std::defer_lock);
+        condvar_.wait(ulock);
     }
   private:
-    pthread_cond_t condition_variable_;
+    std::condition_variable condvar_;
 };
 
 ConditionVariable::ConditionVariable() {
@@ -82,57 +81,50 @@ void ConditionVariable::signal() { impl_->signal(); }
 void ConditionVariable::wakeAll() { impl_->wakeAll(); }
 void ConditionVariable::wait(Mutex* mutex) { impl_->wait(mutex); }
 
-pthread_t* cast(void *ptr) {
-    return static_cast<pthread_t *>(ptr);
-}
-
-Thread::Thread() {
-    thread_handle = 0;
-}
-
 Thread::~Thread() {
-    if (thread_handle) {
-        // not sure if this is correct.
-        pthread_detach(*cast(thread_handle));
-        delete cast(thread_handle);
+    if (thread_.joinable()) {
+        thread_.detach();
     }
 }
 
 bool Thread::start(int (*func)(void *), void *ptr) {
-    if (thread_handle) {
-        // pthread kill is used to send a message to the thread.
-        // The message "0" is special: no message is sent, only error checking
-        // is done. The following line therefore just checks if the thread
-        // is alive.
-        if (pthread_kill(*cast(thread_handle), 0) == 0) {
-            return false;  // already running.
-        } else {
-            // Dead thread.
-            delete cast(thread_handle);
-            thread_handle = 0;
-        }
+    if (isRunning()) {
+        return false;
     }
 
-    thread_handle = new pthread_t;
-    return pthread_create(cast(thread_handle), 0, (void* (*)(void *))func, ptr) == 0;
+    waitForTermination(); // thread may still be finishing, make sure we join it
+
+    // Wrap the function in a lambda to signal when the thread has finished
+    // processing through a future
+    std::packaged_task<void(void *)> task(func);
+    running_future_ = task.get_future();
+
+    thread_ = std::thread(std::move(task), ptr);
+
+    return true;
 }
 
 bool Thread::isRunning() const {
-    return thread_handle && (pthread_kill(*cast(thread_handle), 0) == 0);
-}
-
-int Thread::waitForTermination() {
-
-    if (thread_handle) {
-        void* ret_val;
-        pthread_join(*cast(thread_handle), &ret_val);
-        delete cast(thread_handle);
-        thread_handle = 0;
-        return (int)((long)ret_val);
+    // (from c++ docs)
+    // vallid() == true: This is the case only for futures that were not
+    // default-constructed or moved from  until the first time get() or share()
+    // is called.
+    if (!running_future_.valid()) {
+        return false;
     }
-    return -1;
+
+    const auto status = running_future_.wait_for(std::chrono::seconds(0));
+    return status != std::future_status::ready;
 }
 
-void Thread::setCurrentName(const char *name) {
-    pthread_setname_np(name);
+void Thread::waitForTermination() {
+    if (thread_.joinable()) {
+        thread_.join();
+    }
+
+    // deal with the future accordingly
+    if (running_future_.valid()) {
+        running_future_.get();
+    }
 }
+
