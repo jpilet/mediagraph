@@ -103,7 +103,7 @@ class NodeBase : public PropertyList {
     void openAllStreams();
     void closeAllStreams();
 
-    void signalActivity() { pin_activity_.wakeAll(); }
+    void signalActivity() { pin_activity_.notify_all(); }
 
     const std::string& name() const { return name_; }
     Graph* graph() const { return graph_; }
@@ -116,8 +116,9 @@ class NodeBase : public PropertyList {
     void detach();
 
   private:
-    ConditionVariable pin_activity_;
-    Mutex pin_activity_mutex_;
+    std::condition_variable pin_activity_;
+    std::mutex pin_activity_mutex_;
+    
     Graph* graph_;
     std::string name_;
     bool running_;

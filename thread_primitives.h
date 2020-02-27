@@ -31,47 +31,17 @@
 #include <thread>
 #include <future>
 
-class ConditionVariablePrivate;
-class MutexPrivate;
+// headers useful to create mutexes and cond vars
+#include <mutex>
+#include <condition_variable>
 
-class Mutex {
-  public:
-    Mutex();
-	~Mutex();
-    void lock();
-    bool tryLock();
-    void unlock();
 
-    MutexPrivate* impl_;
-};
-
-//! Aquire a lock on the mutex passed to the constructor.
-//! The lock is maintained while the ScopedLock object is alive.
-//! The lock is released uppon destruction.
-class ScopedLock {
-  public:
-    ScopedLock(Mutex* mutex) : mutex_(mutex) { mutex->lock(); }
-    ~ScopedLock() { if (mutex_) { mutex_->unlock(); } }
-
-    void unlock() { mutex_->unlock(); mutex_ = nullptr; }
-  private:
-    ScopedLock(const ScopedLock&) { }
-    ScopedLock& operator = (const ScopedLock&) { return *this; }
-    Mutex* mutex_;
-};
-
-class ConditionVariable {
-  public:
-    ConditionVariable();
-    ~ConditionVariable();
-    
-    void signal();
-    void wakeAll();
-    void wait(Mutex* mutex);
-
-  private:
-    ConditionVariablePrivate* impl_;
-};
+// handy function to wait for a condition variable on a mutex
+inline void waitFor(std::condition_variable *cond_var, std::mutex *mutex)
+{
+    std::unique_lock<std::mutex> ulock(*mutex, std::defer_lock);
+    cond_var->wait(ulock);
+}
 
 class Thread {
   public:

@@ -29,57 +29,8 @@
 #include "thread_primitives.h"
 
 #include <chrono>
-#include <condition_variable>
 #include <future>
-#include <memory>
-#include <mutex>
 #include <thread>
-
-class MutexPrivate {
-  public:
-    void lock() { mutex_.lock(); }
-    bool tryLock() { return mutex_.try_lock(); }
-    void unlock() { mutex_.unlock(); }
-
-    std::mutex& mutex() { return mutex_; }
-
-  private:
-    std::mutex mutex_;
-};
-
-Mutex::Mutex() { impl_ = new MutexPrivate(); }
-Mutex::~Mutex() { delete impl_; }
-void Mutex::lock() { impl_->lock(); }
-void Mutex::unlock() { impl_->unlock(); }
-bool Mutex::tryLock() { return impl_->tryLock(); }
-
-class ConditionVariablePrivate {
-  public:
-    void signal() {
-        condvar_.notify_one();
-    }
-    void wakeAll() {
-        condvar_.notify_all();
-    }
-    void wait(Mutex* mutex) {
-        std::unique_lock<std::mutex> ulock(mutex->impl_->mutex(), std::defer_lock);
-        condvar_.wait(ulock);
-    }
-  private:
-    std::condition_variable condvar_;
-};
-
-ConditionVariable::ConditionVariable() {
-    impl_ = new ConditionVariablePrivate();
-}
-
-ConditionVariable::~ConditionVariable() {
-    delete impl_;
-}
-
-void ConditionVariable::signal() { impl_->signal(); }
-void ConditionVariable::wakeAll() { impl_->wakeAll(); }
-void ConditionVariable::wait(Mutex* mutex) { impl_->wait(mutex); }
 
 Thread::~Thread() {
     if (thread_.joinable()) {

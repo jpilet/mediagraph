@@ -72,7 +72,7 @@ class NamedStream : public PropertyList {
     NodeBase *node() const { return node_; }
 
   protected:
-    mutable Mutex mutex_;
+    mutable std::mutex mutex_;
     void lock() const { mutex_.lock(); }
     void unlock() const { mutex_.unlock(); }
     virtual void markReadAfter(SequenceId seq) { };
@@ -217,8 +217,8 @@ class Stream : public StreamBase<T> {
       std::deque<Entry> buffer_;
       int queue_limit_;
       bool closed_;
-      ConditionVariable data_available_;
-      ConditionVariable slot_available_;
+      std::condition_variable data_available_;
+      std::condition_variable slot_available_;
 
       // The number of readers that disconnected while the stream was operating.
       int num_lost_readers_;
@@ -288,7 +288,7 @@ bool Stream<T>::findAndReadEntry(Timestamp fresher_than,
                     && it->num_reads >= this->numLostAndActiveReaders()) {
                     it = buffer_.erase(it);
                     incremented = true;
-                    slot_available_.signal();
+                    slot_available_.notify_one();
                 }
             }
         }
@@ -307,14 +307,14 @@ bool Stream<T>::read(StreamReader<T>* reader,
         return false;
     }
 
-    ScopedLock lock(&this->mutex_);
+    std::lock_guard<std::mutex> lock(this->mutex_);
 
     while (!closed_ && reader->isConnected()
            && !findAndReadEntry(reader->seekPosition(),
                                 reader->lastReadSequenceIdPtr(),
                                 data, timestamp, seq)) {
         // No data. We need to wait.
-        data_available_.wait(&this->mutex_);
+        waitFor(&data_available_, &this->mutex_);
     }
 
     bool success = !closed_ && reader->isConnected();
@@ -325,7 +325,7 @@ bool Stream<T>::read(StreamReader<T>* reader,
 template<class T>
 bool Stream<T>::tryRead(StreamReader<T>* reader,
                         T* data, Timestamp* timestamp, SequenceId* seq) {
-    ScopedLock lock(&this->mutex_);
+    std::lock_guard<std::mutex> lock(this->mutex_);
     bool success = !closed_ && reader->isConnected()
         && findAndReadEntry(reader->seekPosition(),
                             reader->lastReadSequenceIdPtr(),
@@ -335,7 +335,7 @@ bool Stream<T>::tryRead(StreamReader<T>* reader,
 
 template<class T>
 bool Stream<T>::canRead(SequenceId consumed_until, Timestamp fresher_than) const {
-    ScopedLock lock(&this->mutex_);
+    std::lock_guard<std::mutex> lock(this->mutex_);
     if (closed_) {
         return false;
     }
@@ -374,7 +374,7 @@ void Stream<T>::dropEntries() {
                 it = buffer_.erase(it);
 
                 if (buffer_.size() < static_cast<unsigned>(queue_limit_)) {
-                    slot_available_.signal();
+                    slot_available_.notify_one();
                 }
 
                 break;
@@ -387,7 +387,7 @@ void Stream<T>::dropEntries() {
 
 template<class T>
 bool Stream<T>::update(Timestamp timestamp, T data) {
-    ScopedLock lock(&this->mutex_);
+    std::lock_guard<std::mutex> lock(this->mutex_);
 
     // Make sure we do not go back in time.
     assert(!(timestamp < last_written_timestamp_));
@@ -404,7 +404,7 @@ bool Stream<T>::update(Timestamp timestamp, T data) {
         dropEntries();
         while (!closed_ && buffer_.size() >= static_cast<unsigned>(queue_limit_)) {
             assert(drop_policy_ != NEVER_BLOCK_DROP_OLDEST);
-            slot_available_.wait(&this->mutex_);
+            waitFor(&slot_available_, &this->mutex_);
             dropEntries();
         }
         if (!closed_) {
@@ -429,7 +429,7 @@ bool Stream<T>::update(Timestamp timestamp, T data) {
                 // interested.
                 buffer_.push_back(Entry(timestamp, sequence_id, data,
                                         this->numLostAndActiveReaders() - interested));
-                data_available_.wakeAll();
+                data_available_.notify_all();
             }
             success = true;
         }
@@ -439,14 +439,14 @@ bool Stream<T>::update(Timestamp timestamp, T data) {
 
 template<class T>
 void Stream<T>::close() {
-    ScopedLock lock(&this->mutex_);
+    std::lock_guard<std::mutex> lock(this->mutex_);
 
     buffer_.clear();
     closed_ = true;
 
     // Let's tell everybody it is no use to wait for us, we're closed.
-    data_available_.wakeAll();
-    slot_available_.wakeAll();
+    data_available_.notify_all();
+    slot_available_.notify_all();
     for (int i = 0; i < this->numReaders(); ++i) {
         this->reader(i)->signalActivity();
     }
@@ -469,7 +469,7 @@ bool Stream<T>::unregisterReader(NamedPin* reader) {
                 // The disconnected reader might be waiting.
                 // Let's wake it.
                 static_cast<StreamReader<T>*>(reader)->signalActivity();
-                data_available_.wakeAll();
+                data_available_.notify_all();
 		return true;
 	}
 	return false;

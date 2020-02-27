@@ -60,7 +60,7 @@ void NodeBase::stop() {
     disconnectAllPins();
     if (isRunning()) {
         closeAllStreams();
-        pin_activity_.wakeAll();
+        pin_activity_.notify_all();
     }
     running_ = false;
 }
@@ -76,7 +76,7 @@ void NodeBase::waitForPinActivity() {
         }
     }
     pin_activity_mutex_.lock();
-    pin_activity_.wait(&pin_activity_mutex_);
+    waitFor(&pin_activity_, &pin_activity_mutex_);
     pin_activity_mutex_.unlock();
 }
 

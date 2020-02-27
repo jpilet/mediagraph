@@ -108,24 +108,3 @@ TEST(ThreadTest, IsRunning) {
     thread.waitForTermination();
     EXPECT_FALSE(thread.isRunning());
 }
-
-TEST(MutexTest, BasicTest) {
-    // A very basic test, single threaded.
-    Mutex mutex;
-    EXPECT_TRUE(mutex.tryLock());
-    EXPECT_FALSE(mutex.tryLock());
-    mutex.unlock();
-    mutex.lock();
-    EXPECT_FALSE(mutex.tryLock());
-    mutex.unlock();
-}
-
-TEST(MutexTest, ScopedLockTest) {
-    Mutex mutex;
-    {
-        ScopedLock lock(&mutex);
-        EXPECT_FALSE(mutex.tryLock());
-    }
-    EXPECT_TRUE(mutex.tryLock());
-    mutex.unlock();
-}
