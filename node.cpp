@@ -75,9 +75,8 @@ void NodeBase::waitForPinActivity() {
             return;
         }
     }
-    pin_activity_mutex_.lock();
-    waitFor(&pin_activity_, &pin_activity_mutex_);
-    pin_activity_mutex_.unlock();
+    std::unique_lock<std::mutex> lock(pin_activity_mutex_);
+    pin_activity_.wait(lock);
 }
 
 bool NodeBase::allPinsConnected() const {
