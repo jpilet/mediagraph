@@ -60,7 +60,7 @@ void NodeBase::stop() {
     disconnectAllPins();
     if (isRunning()) {
         closeAllStreams();
-        pin_activity_.wakeAll();
+        pin_activity_.notify_all();
     }
     running_ = false;
 }
@@ -76,7 +76,7 @@ void NodeBase::waitForPinActivity() {
         }
     }
     pin_activity_mutex_.lock();
-    pin_activity_.wait(&pin_activity_mutex_);
+    waitFor(&pin_activity_, &pin_activity_mutex_);
     pin_activity_mutex_.unlock();
 }
 
@@ -215,11 +215,9 @@ bool ThreadedNodeBase::isRunning() const {
     return NodeBase::isRunning() && thread_.isRunning();
 }
 
-int ThreadedNodeBase::threadEntryPoint(void *ptr) {
+void ThreadedNodeBase::threadEntryPoint(void *ptr) {
     ThreadedNodeBase* instance = static_cast<ThreadedNodeBase*>(ptr);
-    Thread::setCurrentName(instance->name().c_str());
-    int ret_val = instance->threadMain();
-    return ret_val;
+    instance->threadMain();
 }
 
 }  // namespace media_graph

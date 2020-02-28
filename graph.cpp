@@ -41,7 +41,7 @@ Graph::Graph() : started_(false) {
 }
 
 bool Graph::addNode(const std::string& name, std::shared_ptr<NodeBase> node) {
-    ScopedLock lock(&mutex_);
+    std::lock_guard<std::mutex> lock(mutex_);
     assert(node);
     if (lockedGetNodeByName(name)) {
         // We do not accept two nodes with the same name.
@@ -54,7 +54,9 @@ bool Graph::addNode(const std::string& name, std::shared_ptr<NodeBase> node) {
 }
 
 void Graph::removeNode(const std::string& name) {
-    ScopedLock lock(&mutex_);
+    // TODO: if we move to C++14, use std::make_unique()
+    auto lock = std::unique_ptr<std::lock_guard<std::mutex>>(
+        new std::lock_guard<std::mutex>(mutex_));
 
     auto it = nodes_.find(name);
     if (it != nodes_.end()) {
@@ -65,12 +67,12 @@ void Graph::removeNode(const std::string& name) {
         node->disconnectAllStreams();
         
         // Make sure to unlock before "node" is destroyed.
-        lock.unlock();
+        lock = nullptr;
     }
 }
 
 std::shared_ptr<NodeBase> Graph::getNodeByName(const std::string& name) {
-    ScopedLock lock(&mutex_);
+    std::lock_guard<std::mutex> lock(mutex_);
     return lockedGetNodeByName(name);
 }
 
@@ -87,7 +89,7 @@ bool Graph::start() {
         return true;
     }
 
-    ScopedLock lock(&mutex_);
+    std::lock_guard<std::mutex> lock(mutex_);
     for (auto it = nodes_.begin();
          it != nodes_.end(); ++it) {
         if (!it->second->start()) {
@@ -101,7 +103,7 @@ bool Graph::start() {
 }
 
 void Graph::stop() {
-    ScopedLock lock(&mutex_);
+    std::lock_guard<std::mutex> lock(mutex_);
     lockedStop();
 }
 

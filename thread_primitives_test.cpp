@@ -30,14 +30,15 @@
 #include "thread_primitives.h"
 #include "timestamp.h"
 
-static int return_arg(void *ptr) {
-    return (int) ((long)ptr);
+static void do_nothing(void *ptr) {
+    return;
 }
 
-TEST(ThreadTest, JoinValue) {
+TEST(ThreadTest, CanJoinAndRunningIsFalseWhenThreadEnds) {
     Thread thread;
-    EXPECT_TRUE(thread.start(return_arg, (void *)7));
-    EXPECT_EQ(7, thread.waitForTermination());
+    EXPECT_TRUE(thread.start(do_nothing, (void *)7));
+    thread.waitForTermination();
+    EXPECT_FALSE(thread.isRunning());
 }
 
 TEST(ThreadTest, BasicCreation) {
@@ -45,7 +46,7 @@ TEST(ThreadTest, BasicCreation) {
     Thread unstarted;
 }
 
-static int never_returns(void *ptr) {
+static void never_returns(void *ptr) {
     while(1) {
     }
 }
@@ -58,12 +59,11 @@ TEST(ThreadTest, DeleteWhileRunning) {
     // timeout.
 }
 
-static int wait_a_bit(void *ptr) {
+static void wait_a_bit(void *ptr) {
     Duration::milliSeconds(10).sleep();
     if (ptr) {
         *static_cast<int *>(ptr) = 1;
     }
-    return 0;
 }
 
 TEST(ThreadTest, MultipleStarts) {
@@ -80,7 +80,8 @@ TEST(ThreadTest, MultipleStarts) {
     // should work again.
     ASSERT_TRUE(thread.start(wait_a_bit, 0));
 
-    EXPECT_EQ(0, thread.waitForTermination());
+    thread.waitForTermination();
+    EXPECT_FALSE(thread.isRunning());
 }
 
 // Verify the behavior of isRunning().
@@ -103,27 +104,6 @@ TEST(ThreadTest, IsRunning) {
     // We waited long enough: the thread should have returned.
     EXPECT_FALSE(thread.isRunning());
 
-    EXPECT_EQ(0, thread.waitForTermination());
+    thread.waitForTermination();
     EXPECT_FALSE(thread.isRunning());
-}
-
-TEST(MutexTest, BasicTest) {
-    // A very basic test, single threaded.
-    Mutex mutex;
-    EXPECT_TRUE(mutex.tryLock());
-    EXPECT_FALSE(mutex.tryLock());
-    mutex.unlock();
-    mutex.lock();
-    EXPECT_FALSE(mutex.tryLock());
-    mutex.unlock();
-}
-
-TEST(MutexTest, ScopedLockTest) {
-    Mutex mutex;
-    {
-        ScopedLock lock(&mutex);
-        EXPECT_FALSE(mutex.tryLock());
-    }
-    EXPECT_TRUE(mutex.tryLock());
-    mutex.unlock();
 }

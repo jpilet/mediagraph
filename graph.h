@@ -149,7 +149,7 @@ class Graph : public PropertyList {
     bool started_;
 
     // Protects nodes_ against node addition and removal from multiple threads.
-    Mutex mutex_;
+    std::mutex mutex_;
 };
 
 

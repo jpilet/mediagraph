@@ -1,6 +1,5 @@
-// Copyright (c) 2012-2013, Aptarism SA.
+// Copyright (c) 2020 Carlos Becker
 //
-// All rights reserved.
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
 //
@@ -24,40 +23,55 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
-// julien.pilet@aptarism.com, 2012.
-#ifndef THREAD_PRIMITIVES_H
-#define THREAD_PRIMITIVES_H
 
-#include <thread>
-#include <future>
+#include "thread_primitives.h"
 
-// headers useful to create mutexes and cond vars
-#include <mutex>
-#include <condition_variable>
+#include <chrono>
 
-
-// handy function to wait for a condition variable on a mutex
-inline void waitFor(std::condition_variable *cond_var, std::mutex *mutex)
-{
-    std::unique_lock<std::mutex> ulock(*mutex, std::defer_lock);
-    cond_var->wait(ulock);
+Thread::~Thread() {
+    if (thread_.joinable()) {
+        thread_.detach();
+    }
 }
 
-class Thread {
-  public:
-    Thread() = default;
-    ~Thread();
+bool Thread::start(void (*func)(void *), void *ptr) {
+    if (isRunning()) {
+        return false;
+    }
 
-    bool start(void (*func)(void *), void *ptr);
+    waitForTermination(); // thread may still be finishing, make sure we join it
 
-    bool isRunning() const;
+    // Wrap the function in a lambda to signal when the thread has finished
+    // processing through a future
+    std::packaged_task<void(void *)> task(func);
+    running_future_ = task.get_future();
 
-    void waitForTermination();
+    thread_ = std::thread(std::move(task), ptr);
 
-  private:
-    std::thread thread_;
-    std::future<void> running_future_;  // used to signal thread has finished
-};
+    return true;
+}
 
+bool Thread::isRunning() const {
+    // (from c++ docs)
+    // vallid() == true: This is the case only for futures that were not
+    // default-constructed or moved from  until the first time get() or share()
+    // is called.
+    if (!running_future_.valid()) {
+        return false;
+    }
 
-#endif  // THREAD_PRIMITIVES_H
+    const auto status = running_future_.wait_for(std::chrono::seconds(0));
+    return status != std::future_status::ready;
+}
+
+void Thread::waitForTermination() {
+    if (thread_.joinable()) {
+        thread_.join();
+    }
+
+    // deal with the future accordingly
+    if (running_future_.valid()) {
+        running_future_.get();
+    }
+}
+
