@@ -1,6 +1,5 @@
-// Copyright (c) 2012-2013, Aptarism SA.
+// Copyright (c) 2020 Carlos Becker
 //
-// All rights reserved.
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
 //
@@ -24,7 +23,6 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
-// julien.pilet@aptarism.com, 2012.
 
 #include "thread_primitives.h"
 
