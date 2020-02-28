@@ -307,14 +307,14 @@ bool Stream<T>::read(StreamReader<T>* reader,
         return false;
     }
 
-    std::lock_guard<std::mutex> lock(this->mutex_);
+    std::unique_lock<std::mutex> lock(this->mutex_);
 
     while (!closed_ && reader->isConnected()
            && !findAndReadEntry(reader->seekPosition(),
                                 reader->lastReadSequenceIdPtr(),
                                 data, timestamp, seq)) {
         // No data. We need to wait.
-        waitFor(&data_available_, &this->mutex_);
+        data_available_.wait(lock);
     }
 
     bool success = !closed_ && reader->isConnected();
@@ -387,7 +387,7 @@ void Stream<T>::dropEntries() {
 
 template<class T>
 bool Stream<T>::update(Timestamp timestamp, T data) {
-    std::lock_guard<std::mutex> lock(this->mutex_);
+    std::unique_lock<std::mutex> lock(this->mutex_);
 
     // Make sure we do not go back in time.
     assert(!(timestamp < last_written_timestamp_));
@@ -404,7 +404,7 @@ bool Stream<T>::update(Timestamp timestamp, T data) {
         dropEntries();
         while (!closed_ && buffer_.size() >= static_cast<unsigned>(queue_limit_)) {
             assert(drop_policy_ != NEVER_BLOCK_DROP_OLDEST);
-            waitFor(&slot_available_, &this->mutex_);
+            slot_available_.wait(lock);
             dropEntries();
         }
         if (!closed_) {

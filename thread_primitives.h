@@ -35,14 +35,6 @@
 #include <mutex>
 #include <condition_variable>
 
-
-// handy function to wait for a condition variable on a mutex
-inline void waitFor(std::condition_variable *cond_var, std::mutex *mutex)
-{
-    std::unique_lock<std::mutex> ulock(*mutex, std::defer_lock);
-    cond_var->wait(ulock);
-}
-
 class Thread {
   public:
     Thread() = default;
