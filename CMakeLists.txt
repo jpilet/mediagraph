@@ -77,5 +77,5 @@ cxx_test(GraphVisitor_test "mediaGraph" GraphVisitor_test.cpp mediaGraph GraphVi
 
 	
 	
-#add_subdirectory(graphHttpServer)
+add_subdirectory(graphHttpServer)
 add_subdirectory(types)
