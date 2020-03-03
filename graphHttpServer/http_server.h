@@ -82,7 +82,7 @@ class HttpServer {
     virtual ~HttpServer();
 
  protected:
-    virtual bool onNewRequest(HttpReply * reply) { return false; } //let mongoose handle request by default
+    virtual bool onNewRequest(std::unique_ptr<HttpReply> reply) { return false; } //let mongoose handle request by default
 
   private:
     friend class HttpServerCivetHandler;

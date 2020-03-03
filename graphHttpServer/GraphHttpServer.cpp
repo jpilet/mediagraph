@@ -234,7 +234,7 @@ GraphHttpServer::GraphHttpServer(Graph *graph, int port) : HttpServer(port), gra
 }
 
 
-bool GraphHttpServer::onNewRequest(HttpReply * reply) {
+bool GraphHttpServer::onNewRequest(std::unique_ptr<HttpReply> reply) {
    
     std::string uri = reply->getUri();
     std::vector<std::string> directories = SplitString(uri, "/");
@@ -244,14 +244,13 @@ bool GraphHttpServer::onNewRequest(HttpReply * reply) {
         return false;
     } else {
         if (directories[0] == "props") {
-            ListProperties(graph_, reply);
+            ListProperties(graph_, reply.get());
         } else if (directories[0] == "node") {
-            ServeNodeDir(directories, graph_, reply);
+            ServeNodeDir(directories, graph_, reply.get());
         } else if (directories[0] == "nodeList") {
-            ListNodes(graph_, reply);
+            ListNodes(graph_, reply.get());
         } else if (directories[0] == "html") {
             // Let mongoose serve the file.
-            delete(reply);
             return false;
         } else {
             reply->setNotFound();
@@ -264,7 +263,6 @@ bool GraphHttpServer::onNewRequest(HttpReply * reply) {
     }
 
     reply->send();
-    delete(reply);
 
     // Mark as processed
     return true;

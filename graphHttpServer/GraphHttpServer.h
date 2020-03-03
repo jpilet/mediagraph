@@ -48,7 +48,7 @@ class GraphHttpServer : HttpServer {
 
   private:
 
-      virtual  bool onNewRequest(HttpReply * reply);
+      virtual  bool onNewRequest(std::unique_ptr<HttpReply> reply) override;
 
     Graph* graph_;
 };

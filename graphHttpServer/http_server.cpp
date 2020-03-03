@@ -42,12 +42,10 @@ class HttpServerCivetHandler: public CivetHandler {
         const struct mg_request_info *request_info = mg_get_request_info(conn);
           //printf("New request: uri: %s query_string: %s\n",
           //       request_info->uri, request_info->query_string);
-          // TODO: make_shared
-          HttpReply * reply = new HttpReply(conn);
-          if ( server_->onNewRequest(reply) ) {
+          std::unique_ptr<HttpReply> reply(new HttpReply(conn));
+          if ( server_->onNewRequest(std::move(reply)) ) {
               return true;
           }
-          delete(reply); //if the reply is not handled delete the reply
           return false;
     }
   private:

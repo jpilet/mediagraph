@@ -33,6 +33,8 @@
 #include "../stream_reader.h"
 #include "../types/type_definition.h"
 
+#include <iostream>
+
 namespace media_graph {
 
 class ThreadedIntProducer : public ThreadedNodeBase {
@@ -104,6 +106,7 @@ int main(int argc, char **argv) {
     media_graph::ConstructGraph(&graph);
 
     media_graph::GraphHttpServer server(&graph, 1212);
+    std::cout << "http://localhost:1212/\n";
 
     while(1) {
         Duration::milliSeconds(10).sleep();
