@@ -18,7 +18,12 @@ class mediagraphConan(ConanFile):
     default_options = {"fPIC": True}
 
     def requirements(self):
-        self.requires("civetweb/2.0-0@invisionai/stable") 
+        if self.user and self.channel:
+            # If the recipe is using them, I want to consume my fork.
+            self.requires("civetweb/[>=2.0.0-0]@%s/%s" % (self.user, self.channel))
+        else:
+            # otherwise, I'll consume the community one, if exists
+            self.requires("civetweb/[>=2.0.0-0]")
 
     def config_options(self):
         if self.settings.os == 'Windows':
