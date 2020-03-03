@@ -17,12 +17,16 @@ class mediagraphConan(ConanFile):
     options = {"fPIC": [True, False]}
     default_options = {"fPIC": True}
 
+    def requirements(self):
+        self.requires("civetweb")
+
     def config_options(self):
         if self.settings.os == 'Windows':
             del self.options.fPIC
 
     def _configure_cmake(self):
         cmake = CMake(self)
+        cmake.definitions["CIVETWEB_LIB"] = "CONAN_PKG::civetweb"
         cmake.configure()
         return cmake
 
