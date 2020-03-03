@@ -174,7 +174,8 @@ void ServeNode(NodeBase *node, HttpReply *reply) {
 }
 
 // Handle URI with prefix /node/nodeName, assuming nodeName is valid.
-void ServeValidNodeDir(std::vector<std::string> directories, NodeBase *node, HttpReply *reply) {
+void ServeValidNodeDir(const std::vector<std::string>& directories,
+                       NodeBase *node, HttpReply *reply) {
 
     if (directories.size() == 2) {
         // /node/<node name>, we list pins and streams.
@@ -208,7 +209,8 @@ void ServeValidNodeDir(std::vector<std::string> directories, NodeBase *node, Htt
 }
 
 // Handle URI with prefix: /node
-void ServeNodeDir(std::vector<std::string> directories, Graph *graph, HttpReply *reply) {
+void ServeNodeDir(const std::vector<std::string>& directories,
+                  Graph *graph, HttpReply *reply) {
 
     if (directories.size() >= 2) {
         // We have /node/<node name>/...
