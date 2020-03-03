@@ -10,7 +10,7 @@ class mediagraphConan(ConanFile):
     topics = ("conan", "pipeline", "media", "multi-threading")
     
     exports = ("LICENSE.md", "README.md")
-    exports_sources = ("CMakeLists.txt", "*.cpp", "*.h", "types/*")
+    exports_sources = ("*")
     
     generators = "cmake"
     settings = "os", "compiler", "build_type", "arch"
@@ -18,7 +18,7 @@ class mediagraphConan(ConanFile):
     default_options = {"fPIC": True}
 
     def requirements(self):
-        self.requires("civetweb/[>=2.0]")
+        self.requires("civetweb/2.0-0@invisionai/stable") 
 
     def config_options(self):
         if self.settings.os == 'Windows':
@@ -36,7 +36,7 @@ class mediagraphConan(ConanFile):
                               search="set (CMAKE_CXX_STANDARD 11)",
                               replace="""
                                  include(conanbuildinfo.cmake)
-                                 conan_basic_setup()""")
+                                 conan_basic_setup(TARGETS)""")
 
         cmake = self._configure_cmake()
         cmake.build()

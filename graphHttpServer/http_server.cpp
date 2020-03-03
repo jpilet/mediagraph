@@ -31,7 +31,7 @@
 
 //#include <base/string.h>
 
-#include "civetweb/include/CivetServer.h"
+#include <CivetServer.h>
 
 
 class HttpServerCivetHandler: public CivetHandler {
