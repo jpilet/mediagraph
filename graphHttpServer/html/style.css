@@ -1,0 +1,112 @@
+/*
+ * vim:ts=2:sw=2:et:ai
+ */
+
+body {
+  font: 13px Arial; margin: 0.5em 1em;
+}
+
+td {
+  text-align: left;
+}
+
+#motd {
+  margin-left: 170px;
+}
+
+.infobox {
+  background: #eed;
+  padding: 1px 1em;
+}
+
+.help-message {
+  color: #aaa;
+}
+
+.node-entry {
+  margin: .5em;
+}
+
+.node-entry-selected {
+  background: #c3d9ff;
+}
+
+span {
+  margin: .2em;
+}
+
+#middle {
+  margin: 0.5em 0;
+}
+
+#error {
+  background: #c44;
+  color: white;
+  font-weight: bold;
+}
+
+#content {
+  overflow: hidden;
+  min-height: 7em;
+  padding: 1em;
+}
+
+.main {
+  padding: 0.5em;
+  background: #f0fcff;
+}
+
+#menu {
+  margin-top: 1em;
+  min-width: 7em;
+  float: left;
+}
+
+#footer {
+  position: fixed;
+  bottom: 0;
+  right: 0;
+  color: #ccc;
+  padding: 0.5em;
+}
+
+.section {
+  clear: both;
+}
+
+.hidden {
+  display: none;
+}
+
+.menu-item {
+  cursor: pointer;
+  padding: 0.1em 0.5em;
+}
+
+.menu-item-selected {
+  font-weight: bold;
+}
+
+.rounded {
+  border-radius: 6px;
+  -moz-border-radius: 6px;
+  -webkit-border-radius: 6px;
+}
+
+.left-rounded {
+  border-radius: 6px 0 0 6px;
+  -moz-border-radius: 6px 0 0 6px;
+  -webkit-border-radius: 6px 0 0 6px;
+}
+
+.bottom-rounded {
+  border-radius: 0 0 6px 6px;
+  -moz-border-radius: 0 0 6px 6px;
+  -webkit-border-radius: 0 0 6px 6px;
+}
+
+.top-rounded {
+  border-radius: 6px 6px 0 0;
+  -moz-border-radius: 6px 6px 0 0;
+  -webkit-border-radius: 6px 6px 0 0;
+}
