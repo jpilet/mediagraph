@@ -18,7 +18,7 @@ class mediagraphConan(ConanFile):
     default_options = {"fPIC": True}
 
     def requirements(self):
-        self.requires("civetweb")
+        self.requires("civetweb/[>=2.0]")
 
     def config_options(self):
         if self.settings.os == 'Windows':
