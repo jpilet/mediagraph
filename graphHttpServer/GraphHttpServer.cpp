@@ -35,9 +35,9 @@
 #include "../graph.h"
 #include "../stream.h"
 #include "../stream_reader.h"
-#include "civetweb/include/civetweb.h"
+#include <civetweb.h>
 
-namespace media_graph {
+  namespace media_graph {
 
 namespace {
 
