@@ -53,7 +53,7 @@ class HttpServerCivetHandler: public CivetHandler {
 };
 
 
-HttpServer::HttpServer(int port, std::string publicDirectory) {
+HttpServer::HttpServer(int port, const std::string& publicDirectory) {
     char port_as_string[16];
     sprintf(port_as_string, "%d", port);
     const char *options[] = {

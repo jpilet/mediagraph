@@ -78,7 +78,7 @@ private:
  */
 class HttpServer {
   public:
-    HttpServer(int port, std::string publicDirectory = ".");
+    HttpServer(int port, const std::string& publicDirectory = ".");
     virtual ~HttpServer();
 
  protected:
