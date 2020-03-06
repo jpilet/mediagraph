@@ -29,6 +29,7 @@
 
 #include <string>
 #include <memory>
+#include <map>
 
 class CivetServer;
 class HttpServerCivetHandler;
@@ -78,11 +79,13 @@ private:
  */
 class HttpServer {
   public:
+    enum Method { GET, POST, HEAD, PUT, DELETE, OPTIONS, PATCH };
+
     HttpServer(int port, const std::string& publicDirectory = ".");
     virtual ~HttpServer();
 
- protected:
-    virtual bool onNewRequest(std::unique_ptr<HttpReply> reply) { return false; } //let mongoose handle request by default
+    void setHandler(Method method, const std::string& uri,
+                    std::function<bool(std::unique_ptr<HttpReply>)> cb);
 
   private:
     friend class HttpServerCivetHandler;
@@ -91,7 +94,7 @@ class HttpServer {
     HttpServer(const HttpServer&) = delete;
 
     std::unique_ptr<CivetServer> civet_server_;
-    std::unique_ptr<HttpServerCivetHandler> handler_;
+    std::map<std::string, std::shared_ptr<HttpServerCivetHandler>> handlers_;
 };
 
 

@@ -38,20 +38,59 @@ class HttpServerCivetHandler: public CivetHandler {
   public:
     HttpServerCivetHandler(HttpServer* server) : server_(server) { }
 
-    bool handleGet(CivetServer *server, struct mg_connection *conn) {
-        const struct mg_request_info *request_info = mg_get_request_info(conn);
-          //printf("New request: uri: %s query_string: %s\n",
-          //       request_info->uri, request_info->query_string);
-          std::unique_ptr<HttpReply> reply(new HttpReply(conn));
-          if ( server_->onNewRequest(std::move(reply)) ) {
-              return true;
-          }
-          return false;
+    void setHandler(HttpServer::Method method,
+                    std::function<bool(std::unique_ptr<HttpReply>)> f);
+
+
+    bool handleGet(CivetServer *server, struct mg_connection *conn) override {
+      return callHandler(conn, get_);
     }
+    bool handlePost(CivetServer *server, struct mg_connection *conn) override {
+      return callHandler(conn, post_);
+    }
+    bool handleHead(CivetServer *server, struct mg_connection *conn) override {
+      return callHandler(conn, head_);
+    }
+    bool handlePut(CivetServer *server, struct mg_connection *conn) override {
+      return callHandler(conn, put_);
+    }
+    bool handleDelete(CivetServer *server, struct mg_connection *conn) override {
+      return callHandler(conn, delete_);
+    }
+    bool handleOptions(CivetServer *server, struct mg_connection *conn) override {
+      return callHandler(conn, options_);
+    }
+    bool handlePatch(CivetServer *server, struct mg_connection *conn) override {
+      return callHandler(conn, patch_);
+    }
+
   private:
+    bool callHandler(struct mg_connection *conn,
+                     std::function<bool(std::unique_ptr<HttpReply>)>& f) {
+          std::unique_ptr<HttpReply> reply(new HttpReply(conn));
+          return f(std::move(reply));
+    }
+
     HttpServer* server_;
+
+    std::function<bool(std::unique_ptr<HttpReply>)>
+      get_, post_, head_, put_, delete_, options_, patch_;
 };
 
+void HttpServerCivetHandler::setHandler(
+    HttpServer::Method method,
+    std::function<bool(std::unique_ptr<HttpReply>)> f) {
+
+    switch(method) {
+      case HttpServer::GET: get_ = f; break;
+      case HttpServer::POST: post_ = f; break;
+      case HttpServer::HEAD: head_ = f; break;
+      case HttpServer::PUT: put_ = f; break;
+      case HttpServer::DELETE: delete_ = f; break;
+      case HttpServer::OPTIONS: options_ = f; break;
+      case HttpServer::PATCH: patch_ = f; break;
+    }
+}
 
 HttpServer::HttpServer(int port, const std::string& publicDirectory) {
     char port_as_string[16];
@@ -62,11 +101,24 @@ HttpServer::HttpServer(int port, const std::string& publicDirectory) {
         "document_root" , publicDirectory.c_str(),
         NULL};
     civet_server_.reset(new CivetServer(options));
-    handler_.reset(new HttpServerCivetHandler(this));
-    civet_server_->addHandler("", *handler_);
 }
 
 HttpServer::~HttpServer() {
+  civet_server_.reset(nullptr);
+}
+
+void HttpServer::setHandler(HttpServer::Method method,
+                            const std::string& uri,
+                            std::function<bool(std::unique_ptr<HttpReply>)> cb) {
+  auto it = handlers_.find(uri);
+  std::shared_ptr<HttpServerCivetHandler> handler;
+  if (it == handlers_.end()) {
+    handler = handlers_[uri] = std::make_shared<HttpServerCivetHandler>(this);
+  } else {
+    handler = it->second;
+  }
+  handler->setHandler(method, cb);
+  civet_server_->addHandler(uri.c_str(), handler.get());
 }
 
 void HttpReply::send() {

@@ -44,11 +44,6 @@ class GraphHttpServer : HttpServer {
     //! Starts the http server. "graph" has to remain valid during the life
     //! of the constructed object.
     GraphHttpServer(Graph *graph, int port, const std::string& public_directory=".");
-    virtual ~GraphHttpServer() {}
-
-  private:
-
-      virtual  bool onNewRequest(std::unique_ptr<HttpReply> reply) override;
 
     Graph* graph_;
 };
