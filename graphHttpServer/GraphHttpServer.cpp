@@ -229,9 +229,9 @@ void ServeNodeDir(const std::vector<std::string>& directories,
 
 }  // namespace
 
-GraphHttpServer::GraphHttpServer(Graph *graph, int port) : HttpServer(port), graph_(graph) {
-
-}
+GraphHttpServer::GraphHttpServer(Graph *graph, int port,
+                                 const std::string& public_directory)
+  : HttpServer(port, public_directory), graph_(graph) { }
 
 
 bool GraphHttpServer::onNewRequest(std::unique_ptr<HttpReply> reply) {
