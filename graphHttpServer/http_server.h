@@ -27,9 +27,10 @@
 #ifndef HTTP_SERVER_H
 #define HTTP_SERVER_H
 
-#include <string>
-#include <memory>
+#include <functional>
 #include <map>
+#include <memory>
+#include <string>
 
 class CivetServer;
 class HttpServerCivetHandler;
