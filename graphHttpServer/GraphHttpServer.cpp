@@ -209,8 +209,9 @@ void ServeValidNodeDir(const std::vector<std::string>& directories,
 }
 
 // Handle URI with prefix: /node
-void ServeNodeDir(const std::vector<std::string>& directories,
-                  Graph *graph, HttpReply *reply) {
+void ServeNodeDir(Graph *graph, HttpReply *reply) {
+    std::string uri = reply->getUri();
+    std::vector<std::string> directories = SplitString(uri, "/");
 
     if (directories.size() >= 2) {
         // We have /node/<node name>/...
@@ -227,45 +228,41 @@ void ServeNodeDir(const std::vector<std::string>& directories,
     }
 }
 
-}  // namespace
-
-GraphHttpServer::GraphHttpServer(Graph *graph, int port,
-                                 const std::string& public_directory)
-  : HttpServer(port, public_directory), graph_(graph) { }
-
-
-bool GraphHttpServer::onNewRequest(std::unique_ptr<HttpReply> reply) {
-   
-    std::string uri = reply->getUri();
-    std::vector<std::string> directories = SplitString(uri, "/");
-
-    if (directories.size() == 0) {
-        // Let mongoose serve the file.
-        return false;
-    } else {
-        if (directories[0] == "props") {
-            ListProperties(graph_, reply.get());
-        } else if (directories[0] == "node") {
-            ServeNodeDir(directories, graph_, reply.get());
-        } else if (directories[0] == "nodeList") {
-            ListNodes(graph_, reply.get());
-        } else if (directories[0] == "html") {
-            // Let mongoose serve the file.
-            return false;
-        } else {
-            reply->setNotFound();
-        }
-    }
-
+void Finalize(HttpReply* reply) {
     if (reply->status[0] == '2') {
         reply->setAjaxContent();
         reply->handleJsonp();
     }
 
     reply->send();
+}
 
-    // Mark as processed
-    return true;
+}  // namespace
+
+GraphHttpServer::GraphHttpServer(Graph *graph, int port,
+                                 const std::string& public_directory)
+  : HttpServer(port, public_directory), graph_(graph) {
+
+    setHandler(HttpServer::GET, "/props",
+               [this](std::unique_ptr<HttpReply> reply) {
+                 ListProperties(graph_, reply.get());
+                 Finalize(reply.get());
+                 return true;
+               });
+
+    setHandler(HttpServer::GET, "/node",
+               [this](std::unique_ptr<HttpReply> reply) {
+                 ServeNodeDir(graph_, reply.get());
+                 Finalize(reply.get());
+                 return true;
+               });
+
+    setHandler(HttpServer::GET, "/nodeList",
+               [this](std::unique_ptr<HttpReply> reply) {
+                 ListNodes(graph_, reply.get());
+                 Finalize(reply.get());
+                 return true;
+               });
 }
 
 }  // namspace media_graph
