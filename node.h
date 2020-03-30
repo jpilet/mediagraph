@@ -68,7 +68,7 @@ class NodeBase : public PropertyList {
 
     /// Returns a pointer to outputStream number <index>, or 0 if index is out
     /// of range. 
-    virtual const NamedStream* constOutputStream(int index) const { return 0; }
+    virtual const NamedStream* constOutputStream(int) const { return 0; }
 
     NamedStream* outputStream(int index) {
         return const_cast<NamedStream*>(this->constOutputStream(index));
@@ -83,7 +83,7 @@ class NodeBase : public PropertyList {
 
     /// Returns a pointer to input pin number <index>, or null if index is out
     /// of range. Nodes with input pins must overload this method.
-    virtual const NamedPin* constInputPin(int index) const { return 0; };
+    virtual const NamedPin* constInputPin(int) const { return 0; };
     NamedPin* inputPin(int index) {
         return const_cast<NamedPin*>(this->constInputPin(index));
     }

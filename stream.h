@@ -75,7 +75,7 @@ class NamedStream : public PropertyList {
     mutable std::mutex mutex_;
     void lock() const { mutex_.lock(); }
     void unlock() const { mutex_.unlock(); }
-    virtual void markReadAfter(SequenceId seq) { };
+    virtual void markReadAfter(SequenceId /*seq*/) { };
 
   private:
     std::vector<NamedPin*> readers_;

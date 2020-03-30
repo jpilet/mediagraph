@@ -189,7 +189,7 @@ class ReadOnlyProperty : public Property<T> {
         : Property<T>(name, value) { }
 
     virtual bool isWritable() const { return false; }
-    virtual bool setSerialized(const std::string& serialized) {
+    virtual bool setSerialized(const std::string& /*serialized*/) {
         return false;
     }
 
@@ -263,7 +263,7 @@ class PropertyList {
 
     //! The copy constructor does not copy properties, because properties are
     //! instance related anyway.
-    PropertyList(const PropertyList& a) { }
+    PropertyList(const PropertyList& /*a*/) { }
 
     //! Returns the number of properties exposed by the object.
     //! Deriving classes must re-implement this method to expose properties.
@@ -274,7 +274,7 @@ class PropertyList {
     virtual NamedProperty* property(int id);
 
     //! The const version of getProperty.
-    NamedProperty * const getPropertyConst(int id) const {
+    NamedProperty * getPropertyConst(int id) const {
         return const_cast<PropertyList*>(this)->property(id);
     }
 

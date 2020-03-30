@@ -71,11 +71,11 @@ protected:
         nodeCount++;
     }
 
-    virtual void onStream(std::shared_ptr<NodeBase> node, NamedStream * stream) override {
+    virtual void onStream(std::shared_ptr<NodeBase> /*node*/, NamedStream * /*stream*/) override {
         EXPECT_TRUE(false) << "no stream in graph-should not pass here";
     }
     
-    virtual void onPin(std::shared_ptr<NodeBase> node, NamedPin * pin) override {
+    virtual void onPin(std::shared_ptr<NodeBase>, NamedPin *) override {
         EXPECT_TRUE(false) << "no pin in graph-should not pass here";
     }
     

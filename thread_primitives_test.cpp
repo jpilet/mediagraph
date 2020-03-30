@@ -30,7 +30,7 @@
 #include "thread_primitives.h"
 #include "timestamp.h"
 
-static void do_nothing(void *ptr) {
+static void do_nothing(void *) {
     return;
 }
 
@@ -46,7 +46,7 @@ TEST(ThreadTest, BasicCreation) {
     Thread unstarted;
 }
 
-static void never_returns(void *ptr) {
+static void never_returns(void *) {
     while(1) {
     }
 }

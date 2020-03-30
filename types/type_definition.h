@@ -42,22 +42,22 @@ namespace {
 template<typename T> std::string typeName();
 
 template<>
-std::string typeName<int>() { return "int"; }
+inline std::string typeName<int>() { return "int"; }
 
 template<>
-std::string typeName<int64_t>() { return "int64"; }
+inline std::string typeName<int64_t>() { return "int64"; }
 
 template<>
-std::string typeName<bool>() { return "bool"; }
+inline std::string typeName<bool>() { return "bool"; }
 
 template<>
-std::string typeName<float>() { return "float"; }
+inline std::string typeName<float>() { return "float"; }
 
 template<>
-std::string typeName<double>() { return "double"; }
+inline std::string typeName<double>() { return "double"; }
 
 template<>
-std::string typeName<std::string>() { return "string"; }
+inline std::string typeName<std::string>() { return "string"; }
 
 }  // namespace
 
