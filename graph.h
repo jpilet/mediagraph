@@ -142,7 +142,7 @@ class Graph : public PropertyList {
     void lockedStop();
     std::shared_ptr<NodeBase> lockedGetNodeByName(const std::string& name);
 
-    Graph(const Graph&) { }  // copy constructor is forbidden.
+    Graph(const Graph&) = delete;  // copy constructor is forbidden.
 
 
     std::map<std::string, std::shared_ptr<NodeBase>> nodes_;
