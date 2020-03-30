@@ -159,7 +159,7 @@ void StreamReader<T>::disconnect() {
 
 template <typename T>
 bool StreamReader<T>::connect(NamedStream* stream) {
-    if (this == 0) return false;
+    //if (this == 0) return false;
     disconnect();
     if (typeName() == stream->typeName()) {
         pointer_ = dynamic_cast<StreamBase<T>* >(stream);
