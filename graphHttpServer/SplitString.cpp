@@ -7,8 +7,8 @@
 std::vector<std::string> SplitString(const std::string &base, const char *sep) {
     std::vector<std::string> result;
 
-    for (unsigned pos = 0; pos < base.size(); ) {
-        int delimiter = base.find_first_of(sep, pos);
+    for (size_t pos = 0; pos < base.size(); ) {
+        size_t delimiter = base.find_first_of(sep, pos);
         if (delimiter == pos) {
             // we have an empty entry, we skip
         } else if (delimiter == std::string::npos) {
