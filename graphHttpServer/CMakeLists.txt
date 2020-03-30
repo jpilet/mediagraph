@@ -3,6 +3,8 @@ add_library(SplitString SplitString.h SplitString.cpp)
 
 if (NOT CIVETWEB_LIB)
   if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/civetweb/CMakeLists.txt")
+    set(CIVETWEB_ENABLE_WEBSOCKETS  ON)
+    set(CIVETWEB_ENABLE_ASAN OFF)
     set(CIVETWEB_ENABLE_CXX ON)
     set(CIVETWEB_BUILD_TESTING OFF)
     add_subdirectory(civetweb)
