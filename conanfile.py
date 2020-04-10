@@ -10,7 +10,7 @@ class mediagraphConan(ConanFile):
     topics = ("conan", "pipeline", "media", "multi-threading")
     
     exports = ("LICENSE.md", "README.md")
-    exports_sources = ("*")
+    exports_sources = ("*", "!graphHttpServer/civetweb/*")
     
     generators = "cmake"
     settings = "os", "compiler", "build_type", "arch"
