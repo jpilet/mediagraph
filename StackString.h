@@ -13,16 +13,15 @@ namespace
             size_t dataLen = 0;
             for (auto str: stringList)
             {
-                const size_t strLen = strlen(str);
+                const size_t newCharsToAdd = std::min(MaxLen - 1 - dataLen, strlen(str));
 
-                if (dataLen + strLen >= MaxLen - 1) { break; }
-
-                for (size_t i=0; i < strLen; ++i)
+                for (size_t i=0; i < newCharsToAdd; ++i)
                 {
                     m_data[dataLen + i] = str[i];
                 }
 
-                dataLen += strLen;
+                dataLen += newCharsToAdd;
+                if (dataLen >= MaxLen - 1) { break; }
             }
 
             m_data[dataLen] = 0; // end character

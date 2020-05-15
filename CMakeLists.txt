@@ -2,7 +2,7 @@ project(mediagraph)
 cmake_minimum_required(VERSION 3.14.0)
 
 option(ENABLE_EASY_PROFILER "Enable profiling with easy_profiler" OFF)
-if (NOT EASY_PROFILER_LIB)  # EASY_PROFILER_LIB is set if using conan
+if (ENABLE_EASY_PROFILER AND NOT EASY_PROFILER_LIB)  # EASY_PROFILER_LIB is set if using conan
   find_package(easy_profiler REQUIRED)
   set(EASY_PROFILER_LIB "easy_profiler")
 endif()
@@ -56,6 +56,7 @@ add_library(mediaGraph
             node.h
             property.cpp
             property.h
+            StackString.h
             stream.cpp
             stream.h
             stream_reader.h
@@ -65,10 +66,10 @@ add_library(mediaGraph
                           timestamp
                           thread_primitives
                          )
-    if (ENABLE_EASY_PROFILER)
+    if (EASY_PROFILER_LIB)
       target_link_libraries(mediaGraph ${EASY_PROFILER_LIB})
       target_compile_definitions(mediaGraph PUBLIC MEDIAGRAPH_USE_EASY_PROFILER)
-    endif(ENABLE_EASY_PROFILER)
+    endif(EASY_PROFILER_LIB)
 
     set_property(TARGET mediaGraph PROPERTY FOLDER "mediaGraph")
 
