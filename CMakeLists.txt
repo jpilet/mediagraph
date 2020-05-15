@@ -1,6 +1,12 @@
 project(mediagraph)
 cmake_minimum_required(VERSION 3.14.0)
 
+option(ENABLE_EASY_PROFILER "Enable profiling with easy_profiler" OFF)
+if (NOT EASY_PROFILER_LIB)  # EASY_PROFILER_LIB is set if using conan
+  find_package(easy_profiler REQUIRED)
+  set(EASY_PROFILER_LIB "easy_profiler")
+endif()
+
 set (CMAKE_CXX_STANDARD 11)
 
 find_package(Threads REQUIRED)
@@ -59,6 +65,11 @@ add_library(mediaGraph
                           timestamp
                           thread_primitives
                          )
+    if (ENABLE_EASY_PROFILER)
+      target_link_libraries(mediaGraph ${EASY_PROFILER_LIB})
+      target_compile_definitions(mediaGraph PUBLIC MEDIAGRAPH_USE_EASY_PROFILER)
+    endif(ENABLE_EASY_PROFILER)
+
     set_property(TARGET mediaGraph PROPERTY FOLDER "mediaGraph")
 
 cxx_test(graph_test "mediaGraph" graph_test.cpp mediaGraph thread_primitives)

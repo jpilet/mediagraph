@@ -34,6 +34,10 @@
 #include "stream.h"
 #include "stream_reader.h"
 
+#ifdef MEDIAGRAPH_USE_EASY_PROFILER
+    #include <easy/profiler.h>
+#endif
+
 namespace media_graph {
 
 NodeBase::NodeBase() : graph_(nullptr) { }
@@ -76,6 +80,10 @@ void NodeBase::waitForPinActivity() {
         }
     }
     std::unique_lock<std::mutex> lock(pin_activity_mutex_);
+
+#ifdef MEDIAGRAPH_USE_EASY_PROFILER
+    EASY_BLOCK("waitForPinActivity()", profiler::colors::LightBlue50);
+#endif
     pin_activity_.wait(lock);
 }
 
@@ -216,6 +224,11 @@ bool ThreadedNodeBase::isRunning() const {
 
 void ThreadedNodeBase::threadEntryPoint(void *ptr) {
     ThreadedNodeBase* instance = static_cast<ThreadedNodeBase*>(ptr);
+
+#ifdef MEDIAGRAPH_USE_EASY_PROFILER
+    EASY_THREAD(instance->name().c_str());
+#endif
+
     instance->threadMain();
 }
 

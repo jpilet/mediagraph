@@ -36,10 +36,16 @@
 #include "timestamp.h"
 #include "property.h"
 
+#include "StackString.h"
+
 #include <assert.h>
 #include <deque>
 #include <string>
 #include <vector>
+
+#ifdef MEDIAGRAPH_USE_EASY_PROFILER
+    #include <easy/profiler.h>
+#endif
 
 namespace media_graph {
 
@@ -314,6 +320,10 @@ bool Stream<T>::read(StreamReader<T>* reader,
                                 reader->lastReadSequenceIdPtr(),
                                 data, timestamp, seq)) {
         // No data. We need to wait.
+#ifdef MEDIAGRAPH_USE_EASY_PROFILER
+        const StackString<128> blockName{"waitRead ", reader->name().c_str(), "<", reader->typeName().c_str(), ">"};
+        EASY_BLOCK(blockName, profiler::colors::Red50);
+#endif
         data_available_.wait(lock);
     }
 
@@ -404,6 +414,11 @@ bool Stream<T>::update(Timestamp timestamp, T data) {
         dropEntries();
         while (!closed_ && buffer_.size() >= static_cast<unsigned>(queue_limit_)) {
             assert(drop_policy_ != NEVER_BLOCK_DROP_OLDEST);
+
+#ifdef MEDIAGRAPH_USE_EASY_PROFILER
+            const StackString<128> blockName{"waitUpdate ", this->streamName().c_str(), "<", this->typeName().c_str(), ">"};
+            EASY_BLOCK(blockName, profiler::colors::LightBlue50);
+#endif
             slot_available_.wait(lock);
             dropEntries();
         }
