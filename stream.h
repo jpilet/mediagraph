@@ -322,7 +322,7 @@ bool Stream<T>::read(StreamReader<T>* reader,
         // No data. We need to wait.
 #ifdef MEDIAGRAPH_USE_EASY_PROFILER
         const StackString<128> blockName{"waitRead ", reader->name().c_str(), "<", reader->typeName().c_str(), ">"};
-        EASY_BLOCK(blockName, profiler::colors::Red50);
+        EASY_BLOCK(blockName, profiler::colors::BlueGrey50);
 #endif
         data_available_.wait(lock);
     }
@@ -417,7 +417,7 @@ bool Stream<T>::update(Timestamp timestamp, T data) {
 
 #ifdef MEDIAGRAPH_USE_EASY_PROFILER
             const StackString<128> blockName{"waitUpdate ", this->streamName().c_str(), "<", this->typeName().c_str(), ">"};
-            EASY_BLOCK(blockName, profiler::colors::LightBlue50);
+            EASY_BLOCK(blockName, profiler::colors::LightGreen50);
 #endif
             slot_available_.wait(lock);
             dropEntries();

@@ -82,7 +82,7 @@ void NodeBase::waitForPinActivity() {
     std::unique_lock<std::mutex> lock(pin_activity_mutex_);
 
 #ifdef MEDIAGRAPH_USE_EASY_PROFILER
-    EASY_BLOCK("waitForPinActivity()", profiler::colors::LightBlue50);
+    EASY_BLOCK("waitForPinActivity()", profiler::colors::BlueGrey50);
 #endif
     pin_activity_.wait(lock);
 }
