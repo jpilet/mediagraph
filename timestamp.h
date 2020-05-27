@@ -81,13 +81,11 @@ class Duration {
         return Duration(duration_ * factor);
     }
 
-    bool operator < (Duration a) const {
-        return duration_ < a.duration_;
-    }
-
-    bool operator > (Duration a) const {
-        return duration_ > a.duration_;
-    }
+    bool operator < (Duration a) const { return duration_ < a.duration_; }
+    bool operator > (Duration a) const { return duration_ > a.duration_; }
+    bool operator <= (Duration a) const { return duration_ <= a.duration_; }
+    bool operator >= (Duration a) const { return duration_ >= a.duration_; }
+    bool operator == (Duration a) const { return duration_ == a.duration_; }
 
   private:
     explicit Duration(int64_t microsec) : duration_(microsec) { }
@@ -110,27 +108,17 @@ class Timestamp {
 	//! Returns a timestamp containing the current time.
     static Timestamp now();
 
-	static Timestamp microSecondsSince1970(int64_t epoch) {
-		return Timestamp(epoch);
-	}
-
-	int64_t microSecondsSince1970() const { return epoch_; }
-
-    bool operator < (Timestamp b) const {
-        return epoch_ < b.epoch_;
+    static Timestamp microSecondsSince1970(int64_t epoch) {
+        return Timestamp(epoch);
     }
 
-    bool operator > (Timestamp b) const {
-        return epoch_ > b.epoch_;
-    }
+    int64_t microSecondsSince1970() const { return epoch_; }
 
-    bool operator <= (Timestamp b) const {
-        return epoch_ <= b.epoch_;
-    }
-
-    bool operator >= (Timestamp b) const {
-        return epoch_ >= b.epoch_;
-    }
+    bool operator < (Timestamp b) const { return epoch_ < b.epoch_; }
+    bool operator > (Timestamp b) const { return epoch_ > b.epoch_; }
+    bool operator <= (Timestamp b) const { return epoch_ <= b.epoch_; }
+    bool operator >= (Timestamp b) const { return epoch_ >= b.epoch_; }
+    bool operator == (Timestamp b) const { return epoch_ == b.epoch_; }
 
     Duration operator - (Timestamp t) const {
         return Duration(epoch_ - t.epoch_);
@@ -154,8 +142,8 @@ class Timestamp {
         return *this;
     }
 
-	//! Returns a string to represent the time and date.
-	//! The time is printed as UTC time.
+    //! Returns a string to represent the time and date.
+    //! The time is printed as UTC time.
     std::string asString(const char *strftime_format = "%Y.%m.%d - %H:%M:%S") const;
 
   private:
