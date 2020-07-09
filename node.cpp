@@ -29,6 +29,7 @@
 #include <assert.h>
 
 #include <sstream>
+#include <iostream>
 
 #include "graph.h"
 #include "stream.h"
@@ -40,14 +41,15 @@
 
 namespace media_graph {
 
-NodeBase::NodeBase() : graph_(nullptr) { }
+NodeBase::NodeBase() : graph_(nullptr), running_(false), stopping_(false) { }
 
 NodeBase::~NodeBase() {
     detach();
 }
 
 bool NodeBase::start() {
-    if (isRunning()) {
+    std::unique_lock<std::mutex> lock(stop_event_mutex_);
+    if (running_) {
         return true;
     }
 
@@ -61,19 +63,27 @@ bool NodeBase::start() {
 }
 
 void NodeBase::stop() {
+    if (stopping_ || !running_) { return; }
+
+    stopping_ = true;
     disconnectAllPins();
-    if (isRunning()) {
+    if (running_) {
+        running_ = false;
+        //lock.unlock();
+
         closeAllStreams();
+
         pin_activity_.notify_all();
+        stop_event_.notify_all();
     }
-    running_ = false;
+    stopping_ = false;
 }
 
 bool NodeBase::isRunning() const {
     return running_;
 }
 
-void NodeBase::waitForPinActivity() {
+void NodeBase::waitForPinActivity() const {
     for (int i = 0; i < numInputPin(); ++i) {
         if (inputPin(i)->canRead()) {
             return;
@@ -87,11 +97,30 @@ void NodeBase::waitForPinActivity() {
     pin_activity_.wait(lock);
 }
 
+void NodeBase::waitUntilStopped() {
+    if (!this->running_) {
+        return;
+    }
+    std::unique_lock<std::mutex> lock(stop_event_mutex_);
+    stop_event_.wait(lock, [this]{ return !this->running_; });
+}
+
 bool NodeBase::allPinsConnected() const {
     int num_pins = numInputPin();
     for (int i = 0; i < num_pins; ++i) {
         if (!constInputPin(i)->isConnected())
             return false;
+    }
+    return true;
+}
+
+bool NodeBase::allPinsConnectedAndOpen() const {
+    int num_pins = numInputPin();
+    for (int i = 0; i < num_pins; ++i) {
+        const NamedStream* stream = constInputPin(i)->connectedStream();
+        if (!stream || !stream->isOpen()) {
+            return false;
+        }
     }
     return true;
 }
@@ -199,13 +228,15 @@ bool ThreadedNodeBase::start() {
 
     if (startThread()) {
         return true;
+    } else {
+        stop();
     }
-    stop();
     return false;
 }
 
 bool ThreadedNodeBase::startThread() {
     thread_must_quit_ = false;
+    creating_thread_id_ = std::this_thread::get_id();
     if (thread_.start(threadEntryPoint, this)) {
         return true;
     }
@@ -215,11 +246,20 @@ bool ThreadedNodeBase::startThread() {
 void ThreadedNodeBase::stop() {
     thread_must_quit_ = true;
     NodeBase::stop();
-    thread_.waitForTermination();
+    if (creating_thread_id_ == std::this_thread::get_id()) {
+      thread_.waitForTermination();
+    }
 }
 
 bool ThreadedNodeBase::isRunning() const {
     return NodeBase::isRunning() && thread_.isRunning();
+}
+
+void ThreadedNodeBase::waitUntilStopped() {
+    NodeBase::waitUntilStopped();
+    if (creating_thread_id_ == std::this_thread::get_id()) {
+      thread_.waitForTermination();
+    }
 }
 
 void ThreadedNodeBase::threadEntryPoint(void *ptr) {
@@ -229,7 +269,16 @@ void ThreadedNodeBase::threadEntryPoint(void *ptr) {
     EASY_THREAD(instance->name().c_str());
 #endif
 
-    instance->threadMain();
+    try {
+        instance->threadMain();
+    } catch (std::exception& e) {
+        std::cerr << instance->name() << ": exception: "
+            << e.what() << std::endl;
+    }
+
+    NodeBase* base = static_cast<NodeBase*>(instance);
+    instance->thread_must_quit_ = true;
+    base->stop();
 }
 
 }  // namespace media_graph

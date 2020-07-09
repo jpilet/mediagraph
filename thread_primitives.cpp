@@ -53,7 +53,7 @@ bool Thread::start(void (*func)(void *), void *ptr) {
 
 bool Thread::isRunning() const {
     // (from c++ docs)
-    // vallid() == true: This is the case only for futures that were not
+    // valid() == true: This is the case only for futures that were not
     // default-constructed or moved from  until the first time get() or share()
     // is called.
     if (!running_future_.valid()) {

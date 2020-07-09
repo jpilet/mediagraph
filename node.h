@@ -62,6 +62,10 @@ class NodeBase : public PropertyList {
     /// Returns true if start() has been called successfully.
     virtual bool isRunning() const;
 
+    /// If started, blocks the calling thread until stop() is called.
+    /// Otherwise: do nothing.
+    virtual void waitUntilStopped();
+
     /// Returns the number of output streams that your node exposes.
     /// Any node exposing at least one output stream must overload this method.
     virtual int numOutputStream() const { return 0; }
@@ -84,7 +88,7 @@ class NodeBase : public PropertyList {
     /// Returns a pointer to input pin number <index>, or null if index is out
     /// of range. Nodes with input pins must overload this method.
     virtual const NamedPin* constInputPin(int) const { return 0; };
-    NamedPin* inputPin(int index) {
+    NamedPin* inputPin(int index) const {
         return const_cast<NamedPin*>(this->constInputPin(index));
     }
 
@@ -93,9 +97,10 @@ class NodeBase : public PropertyList {
 
     /// Wait for any input pin to receive new data. To know which one, iterate
     /// call tryRead on all input pins.
-    void waitForPinActivity();
+    void waitForPinActivity() const;
 
     bool allPinsConnected() const;
+    bool allPinsConnectedAndOpen() const;
     void openConnectedPins();
     void closeConnectedPins();
     void disconnectAllPins();
@@ -116,12 +121,16 @@ class NodeBase : public PropertyList {
     void detach();
 
   private:
-    std::condition_variable pin_activity_;
-    std::mutex pin_activity_mutex_;
+    mutable std::condition_variable pin_activity_;
+    mutable std::mutex pin_activity_mutex_;
+
+    mutable std::condition_variable stop_event_;
+    mutable std::mutex stop_event_mutex_;
     
     Graph* graph_;
     std::string name_;
     bool running_;
+    bool stopping_;
 };
 
 /*! Convenience class for nodes that need their own thread.
@@ -132,12 +141,14 @@ class ThreadedNodeBase : public NodeBase {
     virtual ~ThreadedNodeBase();
 
     // Starts all output streams + the thread.
-    virtual bool start();
+    virtual bool start() override;
 
     // Stops the thread and all output streams.
-    virtual void stop();
+    virtual void stop() override;
 
-    virtual bool isRunning() const;
+    virtual bool isRunning() const override;
+
+    virtual void waitUntilStopped() override;
 
     bool startThread();
 
@@ -147,11 +158,12 @@ class ThreadedNodeBase : public NodeBase {
      */
     virtual void threadMain() = 0;
 
-    bool threadMustQuit() const { return thread_must_quit_; }
+    bool threadMustQuit() const { return thread_must_quit_ || !allPinsConnectedAndOpen(); }
 
   private:
     static void threadEntryPoint(void *ptr);
     Thread thread_;
+    std::thread::id creating_thread_id_;
     bool thread_must_quit_;
 };
 

@@ -86,6 +86,7 @@ class Duration {
     bool operator <= (Duration a) const { return duration_ <= a.duration_; }
     bool operator >= (Duration a) const { return duration_ >= a.duration_; }
     bool operator == (Duration a) const { return duration_ == a.duration_; }
+    bool operator != (Duration a) const { return duration_ != a.duration_; }
 
   private:
     explicit Duration(int64_t microsec) : duration_(microsec) { }
