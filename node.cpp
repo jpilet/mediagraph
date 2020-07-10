@@ -272,8 +272,8 @@ void ThreadedNodeBase::threadEntryPoint(void *ptr) {
     try {
         instance->threadMain();
     } catch (std::exception& e) {
-        std::cerr << instance->name() << ": exception: "
-            << e.what() << std::endl;
+        std::cerr << "Uncaught top-level exception in mediagraph thread, node: "
+            << instance->name() << ": exception: " << e.what() << std::endl;
     }
 
     NodeBase* base = static_cast<NodeBase*>(instance);
