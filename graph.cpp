@@ -36,7 +36,7 @@ using std::string;
 
 namespace media_graph {
 
-Graph::Graph() : started_(false) {
+Graph::Graph() : started_(false), stopping_(false) {
     addGetProperty("started", this, &Graph::isStarted);
 }
 
@@ -100,9 +100,29 @@ bool Graph::start() {
     return true;
 }
 
+bool Graph::isStarted() const {
+    for (auto it: nodes_) {
+        if (it.second->isRunning()) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void Graph::waitUntilStopped() const {
+    for (auto it: nodes_) {
+        it.second->waitUntilStopped();
+    }
+}
+
 void Graph::stop() {
+    // Prevent deadlocks
+    if (stopping_) { return; }
+
     std::lock_guard<std::mutex> lock(mutex_);
+    stopping_ = true;
     lockedStop();
+    stopping_ = false;
 }
 
 void Graph::lockedStop() {
@@ -111,6 +131,7 @@ void Graph::lockedStop() {
         it->second->closeConnectedPins();
         it->second->stop();
     }
+    started_ = false;
 }
 
 void Graph::clear() {

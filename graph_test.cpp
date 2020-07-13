@@ -125,13 +125,20 @@ class IntConsumerNode : public NodeBase {
 
 class ThreadedIntProducer : public ThreadedNodeBase {
   public:
-    ThreadedIntProducer() : output_stream("out", this) { }
+    ThreadedIntProducer(Duration limit = Duration())
+        : output_stream("out", this), time_limit_(limit) { }
 
     virtual void threadMain() {
         int sequence_no = 0;
+        Timestamp start_time = Timestamp::now();
+
         while (!threadMustQuit()) {
             // push as fast as we can.
-            Timestamp timestamp;
+            Timestamp timestamp = Timestamp::now();
+            if (time_limit_ != Duration() && (timestamp - start_time) > time_limit_) {
+                std::cout << "Time limit reached, exiting producer thread.\n";
+                return;
+            }
             if (!output_stream.update(timestamp, sequence_no))
                 break;
             ++sequence_no;
@@ -144,6 +151,7 @@ class ThreadedIntProducer : public ThreadedNodeBase {
     }
   private:
     Stream<int> output_stream;
+    Duration time_limit_;
 };
 
 class ThreadedPassThrough : public ThreadedNodeBase {
@@ -325,4 +333,44 @@ TEST(GraphTest, JoinSync) {
     graph.stop();
 }
     
+class ThreadedIntConsumer : public ThreadedNodeBase {
+  public:
+    ThreadedIntConsumer() : input_("in", this) { }
+
+    virtual int numInputPin() const { return 1; }
+    virtual const NamedPin* constInputPin(int i) const {
+        switch(i) {
+            case 0: return &input_;
+        }
+        return 0;
+    }
+
+    void threadMain() {
+        while (!threadMustQuit()) {
+            int value;
+            Timestamp timestamp;
+
+            // Here, we "forget" to check the return value of input_, on purpose.
+            // That is to make sure threadMustQuit() returns true when at least one input
+            // becomes invalid.
+            input_.read(&value, &timestamp);
+        }
+    }
+  private:
+    StreamReader<int> input_;
+};
+
+TEST(GraphTest, shouldNoticeWhenStopped) {
+    Graph graph;
+    auto producer = graph.newNode<ThreadedIntProducer>("producer", Duration::milliSeconds(50));
+    auto consumer = graph.newNode<ThreadedIntConsumer>("consumer");
+
+    EXPECT_TRUE(graph.connect(producer, "out", consumer, "in"));
+    EXPECT_TRUE(graph.start());
+
+    EXPECT_TRUE(graph.isStarted());
+    graph.waitUntilStopped();
+    EXPECT_FALSE(graph.isStarted());
+}
+
 }  // namespace media_graph

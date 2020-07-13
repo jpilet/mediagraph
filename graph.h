@@ -122,11 +122,15 @@ class Graph : public PropertyList {
      */
     bool start();
 
-    //! Tells if the graph has been successfully started.
-    bool isStarted() const { return started_; }
+    //! Tells if the graph has at least one running node.
+    bool isStarted() const;
 
     //! Stops the graph. Does nothing if the graph is already stopped.
     void stop();
+
+    //! Wait until all nodes have been stopped. Returns immediately if all
+    //  nodes are already stopped.
+    void waitUntilStopped() const;
 
     /*! Remove and delete all nodes in the graph. Stops the graph first if
      *  necessary.
@@ -146,10 +150,14 @@ class Graph : public PropertyList {
 
 
     std::map<std::string, std::shared_ptr<NodeBase>> nodes_;
-    bool started_;
 
     // Protects nodes_ against node addition and removal from multiple threads.
     std::mutex mutex_;
+
+    bool started_;
+
+    // Flag used to avoid deadlocks when calling stop()
+    bool stopping_;
 };
 
 

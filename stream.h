@@ -66,6 +66,7 @@ class NamedStream : public PropertyList {
     const std::string& streamName() const { return name_; };
     virtual void open() { }
     virtual void close() { }
+    virtual bool isOpen() const { return true; }
 
     virtual void registerReader(NamedPin* reader);
     virtual bool unregisterReader(NamedPin* reader);
@@ -175,6 +176,8 @@ class Stream : public StreamBase<T> {
 
       //! Cancel close(): update, read, and tryRead will behave as normal.
       virtual void open(); 
+
+      virtual bool isOpen() const override { return !closed_; }
 
       StreamDropPolicy drop_policy() const { return drop_policy_; }
 
