@@ -51,6 +51,12 @@ class NamedPin : public PropertyList {
     virtual bool isConnected() const = 0;
     virtual NamedStream *connectedStream() const = 0;
     virtual bool canRead() const = 0;
+
+    bool connectedAndOpen() const {
+        auto s = connectedStream();
+        return s && s->isOpen();
+    }
+
     virtual void openConnectedStream() = 0;
     virtual void closeConnectedStream() = 0;
 
