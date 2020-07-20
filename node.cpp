@@ -84,12 +84,13 @@ bool NodeBase::isRunning() const {
 }
 
 void NodeBase::waitForPinActivity() const {
+    std::unique_lock<std::mutex> lock(pin_activity_mutex_);
     for (int i = 0; i < numInputPin(); ++i) {
-        if (inputPin(i)->canRead()) {
+        const auto pin = inputPin(i);
+        if (pin->canRead() || !pin->connectedAndOpen()) {
             return;
         }
     }
-    std::unique_lock<std::mutex> lock(pin_activity_mutex_);
 
 #ifdef MEDIAGRAPH_USE_EASY_PROFILER
     EASY_BLOCK("waitForPinActivity()", profiler::colors::BlueGrey50);
