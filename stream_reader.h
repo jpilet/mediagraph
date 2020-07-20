@@ -27,6 +27,7 @@
 #ifndef MEDIAGRAPH_STREAM_READER_H
 #define MEDIAGRAPH_STREAM_READER_H
 
+#include <atomic>
 #include <string>
 
 #include "stream.h"
@@ -94,22 +95,22 @@ class StreamReader : public NamedPin {
     virtual bool connect(NamedStream* stream);
     virtual void disconnect();
 
-    virtual void openConnectedStream() { if (isConnected()) pointer_->open(); }
-    virtual void closeConnectedStream() { if (isConnected()) pointer_->close(); }
+    virtual void openConnectedStream() { auto p = get(); if (p) p->open(); }
+    virtual void closeConnectedStream() { auto p = get(); if (p) p->close(); }
 
     virtual NamedStream *connectedStream() const { return pointer_; }
-    virtual void open() { if (isConnected()) pointer_->open(); }
-    virtual void close() { if (isConnected()) pointer_->close(); }
+    virtual void open() { openConnectedStream(); }
+    virtual void close() { closeConnectedStream(); }
 
-    virtual bool isConnected() const { return pointer_ != 0; }
+    virtual bool isConnected() const { return get() != nullptr; }
 
-    StreamBase<T>* get() { return pointer_; }
+    StreamBase<T>* get() const { return pointer_.load(std::memory_order_relaxed); }
 
     // Public, but should only be accessed by classes inheriting StreamBase<T>.
     SequenceId* lastReadSequenceIdPtr() { return &last_read_sequence_id_; }
 
   private:
-    StreamBase<T>* pointer_;
+    std::atomic<StreamBase<T>*> pointer_;
     Timestamp seek_;
 };
 
@@ -125,17 +126,20 @@ StreamReader<T>::~StreamReader() { disconnect(); }
 
 template <typename T>
 bool StreamReader<T>::read(T* data, Timestamp* timestamp, SequenceId* seq) {
-    return (pointer_ && pointer_->read(this, data, timestamp, seq));
+    StreamBase<T>* ptr = pointer_.load(std::memory_order_relaxed);
+    return (ptr && ptr->read(this, data, timestamp, seq));
 }
 
 template <typename T>
 bool StreamReader<T>::tryRead(T* data, Timestamp* timestamp, SequenceId* seq) {
-    return (pointer_ && pointer_->tryRead(this, data, timestamp, seq));
+    StreamBase<T>* ptr = pointer_.load(std::memory_order_relaxed);
+    return (ptr && ptr->tryRead(this, data, timestamp, seq));
 }
 
 template <typename T>
 bool StreamReader<T>::canRead() const {
-    return pointer_ && pointer_->canRead(last_read_sequence_id_, seek_);
+    StreamBase<T>* ptr = pointer_.load(std::memory_order_relaxed);
+    return ptr && ptr->canRead(last_read_sequence_id_, seek_);
 }
 
 template <typename T>
@@ -145,12 +149,9 @@ std::string StreamReader<T>::typeName() const {
 
 template <typename T>
 void StreamReader<T>::disconnect() {
-    if (pointer_) {
-        // We make sure isConnected() reports false
-        // before unregistering.
-        StreamBase<T>* pointer_copy = pointer_;
-        pointer_ = 0;
-        pointer_copy->unregisterReader(this);
+    StreamBase<T>* old_pointer_ = pointer_.exchange(nullptr);
+    if (old_pointer_) {
+        old_pointer_->unregisterReader(this);
         if (node()) {
             node()->stop();
         }
@@ -162,13 +163,15 @@ bool StreamReader<T>::connect(NamedStream* stream) {
     //if (this == 0) return false;
     disconnect();
     if (typeName() == stream->typeName()) {
-        pointer_ = dynamic_cast<StreamBase<T>* >(stream);
-        if (pointer_) {
-            pointer_->registerReader(this);
+        StreamBase<T>* ptr = dynamic_cast<StreamBase<T>* >(stream);
+        pointer_.store(ptr, std::memory_order_relaxed);
+        if (ptr) {
+            ptr->registerReader(this);
             last_read_sequence_id_ = -1;
         }
+        return ptr != 0;
     }
-    return pointer_ != 0;
+    return false;
 }
 
 template <typename T>
