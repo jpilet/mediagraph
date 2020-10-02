@@ -43,8 +43,9 @@ bool NamedStream::unregisterReader(NamedPin* reader) {
     bool found = false;
     for (int i = 0; i < numReaders(); ++i) {
         if (readers_[i] == reader) {
-            markReadAfter(reader->lastReadSequenceId());
+            const SequenceId seq = reader->lastReadSequenceId();
             readers_.erase(readers_.begin() + i);
+            decreaseReadCountUntil(seq);
             found = true;
             break;
         }

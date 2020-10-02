@@ -78,9 +78,6 @@ public:
      *
      *  Once added, a node can be retrieved using its name with getNodeByName.
      *
-     *  If the graph is running, it will be first stopped. The user will have
-     *  to restart it.
-     *
      *  Returns true on success. Returns false if a node <name> already exists
      *  in the graph.
      */
@@ -100,9 +97,6 @@ public:
     /*! Adds an edge to the graph.
      *  Connects the output stream called <streamName> of source node <source>
      *  to the pin called <pinName> on the node <dest>.
-     *
-     *  Behavior undefined if called after start(). Call stop() before
-     *  modifying the graph.
      *
      *  returns true on success.
      */

@@ -33,8 +33,12 @@
 #include "stream_reader.h"
 #include "types/type_definition.h"
 
+#include <random>
+
 namespace media_graph {
+
 namespace {
+
     class TimestampIncrementerStream : public StreamBase<int> {
     public:
         TimestampIncrementerStream(NodeBase* node)
@@ -128,7 +132,7 @@ namespace {
             : output_stream("out", this), time_limit_(limit) {}
 
         virtual void threadMain() {
-            int sequence_no = 0;
+            sequence_no_ = 0;
             Timestamp start_time = Timestamp::now();
 
             while (!threadMustQuit()) {
@@ -138,19 +142,22 @@ namespace {
                     std::cout << "Time limit reached, exiting producer thread.\n";
                     return;
                 }
-                if (!output_stream.update(timestamp, sequence_no)) break;
-                ++sequence_no;
+                if (!output_stream.update(timestamp, sequence_no_)) break;
+                ++sequence_no_;
             }
         }
         virtual int numOutputStream() const { return 1; }
         virtual const NamedStream* constOutputStream(int index) const {
             if (index == 0) return &output_stream;
-            return 0;
+            return nullptr;
         }
+
+        int numSent() const { return sequence_no_; }
 
     private:
         Stream<int> output_stream;
         Duration time_limit_;
+        int sequence_no_;
     };
 
     class ThreadedPassThrough : public ThreadedNodeBase {
@@ -327,7 +334,8 @@ TEST(GraphTest, JoinSync) {
 
 class ThreadedIntConsumer : public ThreadedNodeBase {
 public:
-    ThreadedIntConsumer() : input_("in", this) {}
+    ThreadedIntConsumer(Duration sleepAfterRead = Duration())
+        : input_("in", this), sleepAfterRead_(sleepAfterRead) {}
 
     virtual int numInputPin() const { return 1; }
     virtual const NamedPin* constInputPin(int i) const {
@@ -338,19 +346,27 @@ public:
     }
 
     void threadMain() {
+        consumed_ = 0;
         while (!threadMustQuit()) {
             int value;
             Timestamp timestamp;
 
             // Here, we "forget" to check the return value of input_, on purpose.
-            // That is to make sure threadMustQuit() returns true when at least one input
-            // becomes invalid.
+            // That is to make sure threadMustQuit() returns true when at least one
+            // input becomes invalid.
             input_.read(&value, &timestamp);
+            ++consumed_;
+
+            if (sleepAfterRead_ != Duration()) { sleepAfterRead_.sleep(); }
         }
     }
 
+    size_t consumed() const { return consumed_; }
+
 private:
     StreamReader<int> input_;
+    Duration sleepAfterRead_;
+    size_t consumed_;
 };
 
 TEST(GraphTest, shouldNoticeWhenStopped) {
@@ -364,6 +380,64 @@ TEST(GraphTest, shouldNoticeWhenStopped) {
     EXPECT_TRUE(graph.isStarted());
     graph.waitUntilStopped();
     EXPECT_FALSE(graph.isStarted());
+}
+
+TEST(GraphTest, shouldAddAndRemoveNodesWhileRunning) {
+    Graph graph;
+    auto producer = graph.newNode<ThreadedIntProducer>("producer");
+
+    std::vector<std::shared_ptr<ThreadedIntConsumer>> consumers;
+
+    std::mt19937 gen(42);
+    std::uniform_int_distribution<> dice6(1, 6);
+    int nextId = 0;
+    size_t maxConsumers = 0;
+    size_t totalConsumed = 0;
+
+    EXPECT_TRUE(graph.start());
+    for (Timestamp endTime = Timestamp::now() + Duration::seconds(5); Timestamp::now() < endTime;
+         Duration::milliSeconds(3).sleep()) {
+        switch (dice6(gen)) {
+            case 1: {
+                // create a new consumer
+                std::stringstream ss;
+                ss << "consumer_" << nextId++;
+                auto consumer =
+                    graph.newNode<ThreadedIntConsumer>(ss.str(), Duration::milliSeconds(2));
+                consumers.push_back(consumer);
+                EXPECT_TRUE(graph.connect(producer, "out", consumer, "in"));
+                break;
+            }
+            case 2:
+                if (!consumers.empty()) {
+                    // randomly kill a consumer
+                    auto it = consumers.begin() + std::uniform_int_distribution<long>(
+                                                      0, long(consumers.size() - 1))(gen);
+                    auto pin = (*it)->inputPin(0);
+                    pin->disconnect();
+                    totalConsumed += (*it)->consumed();
+                    graph.removeNode((*it)->name());
+                    consumers.erase(it);
+                }
+                break;
+        }
+
+        EXPECT_EQ(1 + consumers.size(), graph.numNodes());
+        EXPECT_EQ(consumers.size(), producer->outputStream(0)->numReaders());
+        maxConsumers = std::max(maxConsumers, consumers.size());
+    }
+    EXPECT_TRUE(graph.isStarted());
+    for (auto consumer : consumers) { graph.removeNode(consumer->name()); }
+    consumers.clear();
+
+    EXPECT_EQ(1, graph.numNodes());
+    EXPECT_EQ(0, producer->outputStream(0)->numReaders());
+
+    graph.stop();
+
+    EXPECT_GT(producer->numSent(), 100);
+    EXPECT_GT(maxConsumers, 10);
+    EXPECT_GT(totalConsumed, 1000);
 }
 
 }  // namespace media_graph
