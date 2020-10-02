@@ -33,81 +33,74 @@
 #include "stream.h"
 #include "stream_reader.h"
 
-
 namespace media_graph {
-
 namespace {
+    class NodeWithProperty : public NodeBase {
+    public:
+        NodeWithProperty() : A("int A", 1) {}
 
-class NodeWithProperty : public NodeBase {
-public:
-    NodeWithProperty() : A("int A", 1) { }
-
-    virtual int numProperty() const { return 1 + PropertyList::numProperty(); }
-    virtual NamedProperty* property(int id) {
-        switch (id) {
-            case 0: return &A;
+        virtual int numProperty() const { return 1 + PropertyList::numProperty(); }
+        virtual NamedProperty* property(int id) {
+            switch (id) {
+                case 0: return &A;
+            }
+            return PropertyList::property(id - 1);
         }
-        return PropertyList::property(id - 1);
-    }
 
-    void setA(int val) { A = val;}
-private:
-    Property<int> A;
-};
+        void setA(int val) { A = val; }
 
+    private:
+        Property<int> A;
+    };
 
-class GraphAnalyser: GraphVisitor {
-
-public:
-    int getNodeCount(Graph * graph) {
-        nodeCount = 0;
-        visit(graph);
-        return nodeCount;
-    }
-
-protected:
-    virtual void onNode(std::shared_ptr<NodeBase> node) override {
-        EXPECT_EQ("node prop int",node->name());
-        nodeCount++;
-    }
-
-    virtual void onStream(std::shared_ptr<NodeBase> /*node*/, NamedStream * /*stream*/) override {
-        EXPECT_TRUE(false) << "no stream in graph-should not pass here";
-    }
-    
-    virtual void onPin(std::shared_ptr<NodeBase>, NamedPin *) override {
-        EXPECT_TRUE(false) << "no pin in graph-should not pass here";
-    }
-    
-    virtual void onProperty(std::shared_ptr<NodeBase> node, NamedStream * stream, NamedPin * pin, NamedProperty * prop) override {
-        if (node==0) {
-            //test on graph property
-            EXPECT_EQ("started",prop->name());
-        } else {
-             EXPECT_EQ("node prop int",node->name());
-             //test property name
-             if ( (stream == 0) && (pin == 0) ) {
-                 EXPECT_EQ("int A",prop->name());
-             }
+    class GraphAnalyser : GraphVisitor {
+    public:
+        int getNodeCount(Graph* graph) {
+            nodeCount = 0;
+            visit(graph);
+            return nodeCount;
         }
-    }  
 
-private:
-    int nodeCount;
-};
+    protected:
+        virtual void onNode(std::shared_ptr<NodeBase> node) override {
+            EXPECT_EQ("node prop int", node->name());
+            nodeCount++;
+        }
 
-TEST(GraphVisitor, parseGraph) {
+        virtual void onStream(std::shared_ptr<NodeBase> /*node*/,
+                              NamedStream* /*stream*/) override {
+            EXPECT_TRUE(false) << "no stream in graph-should not pass here";
+        }
 
-    Graph graph;
-    std::shared_ptr<NodeWithProperty> node  = graph.newNode<NodeWithProperty>("node prop int");
+        virtual void onPin(std::shared_ptr<NodeBase>, NamedPin*) override {
+            EXPECT_TRUE(false) << "no pin in graph-should not pass here";
+        }
 
-    GraphAnalyser grfAnal;
-   
-    EXPECT_EQ(1,grfAnal.getNodeCount(&graph));
+        virtual void onProperty(std::shared_ptr<NodeBase> node, NamedStream* stream, NamedPin* pin,
+                                NamedProperty* prop) override {
+            if (node == 0) {
+                // test on graph property
+                EXPECT_EQ("started", prop->name());
+            } else {
+                EXPECT_EQ("node prop int", node->name());
+                // test property name
+                if ((stream == 0) && (pin == 0)) { EXPECT_EQ("int A", prop->name()); }
+            }
+        }
 
-}
+    private:
+        int nodeCount;
+    };
 
-} //namespace anonymous
+    TEST(GraphVisitor, parseGraph) {
+        Graph graph;
+        std::shared_ptr<NodeWithProperty> node = graph.newNode<NodeWithProperty>("node prop int");
 
-} //namespace media_graph
+        GraphAnalyser grfAnal;
 
+        EXPECT_EQ(1, grfAnal.getNodeCount(&graph));
+    }
+
+}  // namespace
+
+}  // namespace media_graph

@@ -27,49 +27,47 @@
 #ifndef MEDIAGRAPH_BINARY_SERIALIZER_H
 #define MEDIAGRAPH_BINARY_SERIALIZER_H
 
-#include <string>
 #include <stdint.h>
+#include <string>
 
 #include "type_visitor.h"
 
 namespace media_graph {
-
 //! Serialize known types to binary.
 class BinarySerializer : public TypeConstVisitor {
-  public:
-    virtual bool process(const int &value);
-    virtual bool process(const int64_t &value);
-    virtual bool process(const bool &value);
+public:
+    virtual bool process(const int& value);
+    virtual bool process(const int64_t& value);
+    virtual bool process(const bool& value);
 
-    virtual bool process(const float &value);
-    virtual bool process(const double &value);
+    virtual bool process(const float& value);
+    virtual bool process(const double& value);
 
-    virtual bool process(const std::string &value);
+    virtual bool process(const std::string& value);
 
-    const std::string &value() const { return serialized_value_; }
+    const std::string& value() const { return serialized_value_; }
 
-  private:
+private:
     std::string serialized_value_;
 };
 
 //! De-serialize known types from binary.
 class BinaryDeSerializer : public TypeVisitor {
-  public:
-    BinaryDeSerializer(const std::string &serialized_value)
-        : serialized_value_(serialized_value) { }
+public:
+    BinaryDeSerializer(const std::string& serialized_value) : serialized_value_(serialized_value) {}
 
-    virtual bool process(int *value);
-    virtual bool process(int64_t *value);
-    virtual bool process(bool *value);
+    virtual bool process(int* value);
+    virtual bool process(int64_t* value);
+    virtual bool process(bool* value);
 
-    virtual bool process(float *value);
-    virtual bool process(double *value);
+    virtual bool process(float* value);
+    virtual bool process(double* value);
 
-    virtual bool process(std::string *value);
+    virtual bool process(std::string* value);
 
-    const std::string &remaining() const { return serialized_value_; }
+    const std::string& remaining() const { return serialized_value_; }
 
-  private:
+private:
     std::string serialized_value_;
 };
 

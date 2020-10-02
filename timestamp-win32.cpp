@@ -27,11 +27,10 @@
 #include "timestamp.h"
 
 #define WIN32_LEAN_AND_MEAN
-#include <windows.h>
 #include <time.h>
+#include <windows.h>
 
 namespace {
-
 // GetSystemTimeAsFileTime is based in 1601.
 // Our reference is 1970. This is the difference between both epochs.
 // Unit: 100 nanoseconds
@@ -40,14 +39,10 @@ const int64_t kDeltaEpoch = 11644473600000000ULL;
 }  // namespace
 
 void Duration::sleep() const {
-    if (duration_ <= 0) {
-        return;
-    }
+    if (duration_ <= 0) { return; }
 
     Timestamp deadline = Timestamp::now() + *this;
-    if (*this > Duration::microSeconds(2000)) {
-        Sleep(DWORD(duration_ / 1000));
-    }
+    if (*this > Duration::microSeconds(2000)) { Sleep(DWORD(duration_ / 1000)); }
 
     while (Timestamp::now() < deadline) {
         // wait..
@@ -55,16 +50,13 @@ void Duration::sleep() const {
 }
 
 Timestamp Timestamp::now() {
-
     FILETIME time;
     GetSystemTimeAsFileTime(&time);
     return Timestamp(
-        (int64_t(time.dwLowDateTime)
-        + (int64_t(time.dwHighDateTime) << 32)
-        - kDeltaEpoch) / 10);
+        (int64_t(time.dwLowDateTime) + (int64_t(time.dwHighDateTime) << 32) - kDeltaEpoch) / 10);
 }
 
-std::string Timestamp::asString(const char *strftime_format) const {
+std::string Timestamp::asString(const char* strftime_format) const {
     struct tm t;
     time_t seconds_since_epoch = epoch_ / 1000000;
 

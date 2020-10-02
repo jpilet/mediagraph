@@ -28,7 +28,6 @@
 #include <assert.h>
 
 namespace media_graph {
-
 PropertyList::~PropertyList() {
     while (!properties_.empty()) {
         delete properties_.back();
@@ -37,20 +36,16 @@ PropertyList::~PropertyList() {
 }
 
 NamedProperty* PropertyList::property(int id) {
-    if (unsigned(id) < properties_.size()) {
-        return properties_[id];
-    }
+    if (unsigned(id) < properties_.size()) { return properties_[id]; }
     return 0;
 }
 
 NamedProperty* PropertyList::getPropertyByName(const std::string& name) {
     int num_props = numProperty();
     for (int i = 0; i < num_props; ++i) {
-        NamedProperty *prop = property(i);
-		assert(prop != 0);
-        if (prop && (name == prop->name())) {
-            return prop;
-        }
+        NamedProperty* prop = property(i);
+        assert(prop != 0);
+        if (prop && (name == prop->name())) { return prop; }
     }
     return 0;
 }

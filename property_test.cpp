@@ -30,42 +30,43 @@
 #include "types/type_definition.h"
 
 namespace media_graph {
-
 namespace {
-
-class ABC : public PropertyList {
-  public:
-    ABC() : a_("a", 0), b_("b"), c_("c") {
-        addGetProperty("pi", this, &ABC::getPi);
-        addGetSetProperty("d", this, &ABC::getD, &ABC::setD);
-    }
-
-    virtual int numProperty() const { return 3 + PropertyList::numProperty(); }
-    virtual NamedProperty* property(int id) {
-        switch (id) {
-            case 0: return &a_;
-            case 1: return &b_;
-            case 2: return &c_;
+    class ABC : public PropertyList {
+    public:
+        ABC() : a_("a", 0), b_("b"), c_("c") {
+            addGetProperty("pi", this, &ABC::getPi);
+            addGetSetProperty("d", this, &ABC::getD, &ABC::setD);
         }
-        return PropertyList::property(id - 3);
-    }
 
-    Property<int> a_;
-    Property<int> b_;
-    Property<int> c_;
+        virtual int numProperty() const { return 3 + PropertyList::numProperty(); }
+        virtual NamedProperty* property(int id) {
+            switch (id) {
+                case 0: return &a_;
+                case 1: return &b_;
+                case 2: return &c_;
+            }
+            return PropertyList::property(id - 3);
+        }
 
-    double getPi() const { return 3.1415; }
+        Property<int> a_;
+        Property<int> b_;
+        Property<int> c_;
 
-    int d;
-    int getD() const { return d; }
-    bool setD(const int& value) { d = value; return true; }
-};
+        double getPi() const { return 3.1415; }
+
+        int d;
+        int getD() const { return d; }
+        bool setD(const int& value) {
+            d = value;
+            return true;
+        }
+    };
 
 }  // namespace
 
 TEST(PropertyTest, BasicEnumeration) {
     ABC abc;
-    PropertyList *propList = &abc;
+    PropertyList* propList = &abc;
 
     EXPECT_EQ(5, propList->numProperty());
     EXPECT_EQ(0, propList->property(5));

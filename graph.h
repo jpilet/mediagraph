@@ -29,18 +29,17 @@
 #define MEDIAGRAPH_GRAPH_H
 
 #include "node.h"
-#include "thread_primitives.h"
 #include "property.h"
+#include "thread_primitives.h"
 
-#include <string>
 #include <map>
 #include <memory>
 #include <sstream>
+#include <string>
 
 namespace media_graph {
-
 /*! Represent a graph of media producers, filters, and consumers.
- *  
+ *
  *  In the graph, nodes can produce and consume data. A timestamp is associated
  *  with each data. Each node might or might not have its own thread. The
  *  output of a node can go to any number of other nodes. Graph building is
@@ -54,26 +53,26 @@ namespace media_graph {
  *
  *  \code
  *  Graph graph;
- *  
+ *
  *  ProducerNode *producer = new ProducerNode("producer", &graph);
  *  ConsumerNode *consumer = new ConsumerNode("consumer", &graph);
  *
  *  if (!graph.connect(producer, "out", consumer, "in")
  *      || !graph.start()) {
- *    // something went wrong.  
+ *    // something went wrong.
  *  } else {
  *    // graph is running.
  *  }
  *  \endcode
  */
 class Graph : public PropertyList {
-  public:
+public:
     Graph();
     ~Graph() { clear(); }
 
     /// Construct a new node, add it to the graph, and returns a shared_ptr.
-    template<typename T, typename ... Args>
-    std::shared_ptr<T> newNode(const std::string& wanted_name, Args && ... args);
+    template <typename T, typename... Args>
+    std::shared_ptr<T> newNode(const std::string& wanted_name, Args&&... args);
 
     /*! Adds a node to the graph.
      *
@@ -113,8 +112,8 @@ class Graph : public PropertyList {
                  std::shared_ptr<NodeBase> dest, const std::string& pinName);
 
     //! Adds an edge to the graph.
-    bool connect(const std::string& source, const std::string& streamName,
-                 const std::string& dest, const std::string& pinName);
+    bool connect(const std::string& source, const std::string& streamName, const std::string& dest,
+                 const std::string& pinName);
 
     /*! Start the graph: calls start() on every node.
      *  Returns true if all nodes started properly. If a node refuses to start,
@@ -141,13 +140,12 @@ class Graph : public PropertyList {
 
     std::shared_ptr<NodeBase> node(int num) const;
 
-  private:
+private:
     // Stop the graph, assumes mutex_ is already aquired.
     void lockedStop();
     std::shared_ptr<NodeBase> lockedGetNodeByName(const std::string& name);
 
     Graph(const Graph&) = delete;  // copy constructor is forbidden.
-
 
     std::map<std::string, std::shared_ptr<NodeBase>> nodes_;
 
@@ -160,9 +158,8 @@ class Graph : public PropertyList {
     bool stopping_;
 };
 
-
-template<typename T, typename ... Args>
-std::shared_ptr<T> Graph::newNode(const std::string& wanted_name, Args && ... args) {
+template <typename T, typename... Args>
+std::shared_ptr<T> Graph::newNode(const std::string& wanted_name, Args&&... args) {
     std::shared_ptr<T> ptr = std::make_shared<T>(args...);
 
     std::string try_name = wanted_name;

@@ -25,28 +25,26 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
 
-#include "../timestamp.h"
-#include "../graph.h"
 #include "../graphHttpServer/GraphHttpServer.h"
+#include "../graph.h"
 #include "../node.h"
 #include "../stream.h"
 #include "../stream_reader.h"
+#include "../timestamp.h"
 #include "../types/type_definition.h"
 
 #include <iostream>
 
 namespace media_graph {
-
 class ThreadedIntProducer : public ThreadedNodeBase {
-  public:
-    ThreadedIntProducer() : output_stream("out", this) { }
+public:
+    ThreadedIntProducer() : output_stream("out", this) {}
     virtual void threadMain() {
         Timestamp timestamp;
         int sequence = 0;
         while (!threadMustQuit()) {
             // push as fast as we can.
-            if (!output_stream.update(timestamp, sequence))
-                break;
+            if (!output_stream.update(timestamp, sequence)) break;
             sequence++;
         }
     }
@@ -55,25 +53,21 @@ class ThreadedIntProducer : public ThreadedNodeBase {
         if (index == 0) return &output_stream;
         return 0;
     }
-  private:
+
+private:
     Stream<int> output_stream;
 };
 
 class ThreadedPassThrough : public ThreadedNodeBase {
-  public:
-    ThreadedPassThrough()
-        : output_stream("out", this), input_stream("in", this) { }
+public:
+    ThreadedPassThrough() : output_stream("out", this), input_stream("in", this) {}
 
     virtual void threadMain() {
         while (!threadMustQuit()) {
             int data;
             Timestamp timestamp;
-            if (!input_stream.read(&data, &timestamp)) {
-                break;
-            }
-            if (!output_stream.update(timestamp, data)) {
-                break;
-            }
+            if (!input_stream.read(&data, &timestamp)) { break; }
+            if (!output_stream.update(timestamp, data)) { break; }
         }
     }
 
@@ -87,12 +81,12 @@ class ThreadedPassThrough : public ThreadedNodeBase {
         return 0;
     }
 
-  private:
+private:
     Stream<int> output_stream;
     StreamReader<int> input_stream;
 };
 
-void ConstructGraph(Graph *graph) {
+void ConstructGraph(Graph* graph) {
     auto producer = graph->newNode<ThreadedIntProducer>("producer");
     auto passThrough = graph->newNode<ThreadedPassThrough>("passthrough");
     graph->connect(producer->outputStream(0), passThrough->inputPin(0));
@@ -101,16 +95,14 @@ void ConstructGraph(Graph *graph) {
 
 }  // namespace media_graph
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
     media_graph::Graph graph;
     media_graph::ConstructGraph(&graph);
 
     media_graph::GraphHttpServer server(&graph, 1212);
     std::cout << "http://localhost:1212/\n";
 
-    while(1) {
-        Duration::milliSeconds(10).sleep();
-    }
+    while (1) { Duration::milliSeconds(10).sleep(); }
 
     return 0;
 }

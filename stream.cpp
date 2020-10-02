@@ -30,7 +30,6 @@
 #include <assert.h>
 
 namespace media_graph {
-
 void NamedStream::registerReader(NamedPin* reader) {
     assert(!isReaderRegistered(reader));
     lock();
@@ -40,7 +39,7 @@ void NamedStream::registerReader(NamedPin* reader) {
 
 bool NamedStream::unregisterReader(NamedPin* reader) {
     lock();
-    
+
     bool found = false;
     for (int i = 0; i < numReaders(); ++i) {
         if (readers_[i] == reader) {
@@ -71,9 +70,7 @@ bool NamedStream::isReaderRegistered(NamedPin* reader) const {
 }
 
 void NamedStream::disconnectReaders() {
-    while (readers_.size() > 0) {
-        readers_[readers_.size() - 1]->disconnect();
-    }
+    while (readers_.size() > 0) { readers_[readers_.size() - 1]->disconnect(); }
 }
 
 }  // namespace media_graph

@@ -29,21 +29,17 @@
 #include <chrono>
 
 Thread::~Thread() {
-    if (thread_.joinable()) {
-        thread_.detach();
-    }
+    if (thread_.joinable()) { thread_.detach(); }
 }
 
-bool Thread::start(void (*func)(void *), void *ptr) {
-    if (isRunning()) {
-        return false;
-    }
+bool Thread::start(void (*func)(void*), void* ptr) {
+    if (isRunning()) { return false; }
 
-    waitForTermination(); // thread may still be finishing, make sure we join it
+    waitForTermination();  // thread may still be finishing, make sure we join it
 
     // Wrap the function in a lambda to signal when the thread has finished
     // processing through a future
-    std::packaged_task<void(void *)> task(func);
+    std::packaged_task<void(void*)> task(func);
     running_future_ = task.get_future();
 
     thread_ = std::thread(std::move(task), ptr);
@@ -56,22 +52,15 @@ bool Thread::isRunning() const {
     // valid() == true: This is the case only for futures that were not
     // default-constructed or moved from  until the first time get() or share()
     // is called.
-    if (!running_future_.valid()) {
-        return false;
-    }
+    if (!running_future_.valid()) { return false; }
 
     const auto status = running_future_.wait_for(std::chrono::seconds(0));
     return status != std::future_status::ready;
 }
 
 void Thread::waitForTermination() {
-    if (thread_.joinable()) {
-        thread_.join();
-    }
+    if (thread_.joinable()) { thread_.join(); }
 
     // deal with the future accordingly
-    if (running_future_.valid()) {
-        running_future_.get();
-    }
+    if (running_future_.valid()) { running_future_.get(); }
 }
-

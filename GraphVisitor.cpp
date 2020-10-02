@@ -26,40 +26,32 @@
 //
 #include "GraphVisitor.h"
 
-
 namespace media_graph {
+void GraphVisitor::visit(Graph* graph) {
+    for (int i = 0; i < graph->numProperty(); i++) { onProperty(0, 0, 0, graph->property(i)); }
 
-void GraphVisitor::visit(Graph * graph) {
-
-    for (int i=0; i < graph->numProperty(); i++) {
-        onProperty(0, 0, 0, graph->property(i));
-    }
-
-    for (int i=0; i < graph->numNodes(); i++) {
+    for (int i = 0; i < graph->numNodes(); i++) {
         std::shared_ptr<NodeBase> node = graph->node(i);
         onNode(node);
 
-        for (int j=0; j < node->numProperty(); j++) {
-            onProperty(node, 0, 0, node->property(j));
-        }
+        for (int j = 0; j < node->numProperty(); j++) { onProperty(node, 0, 0, node->property(j)); }
 
-        for (int j=0; j < node->numOutputStream(); j++) {
-            NamedStream * stream = node->outputStream(j);
-            onStream(node,stream);
-            for (int k=0; k < stream->numProperty(); k++) {
+        for (int j = 0; j < node->numOutputStream(); j++) {
+            NamedStream* stream = node->outputStream(j);
+            onStream(node, stream);
+            for (int k = 0; k < stream->numProperty(); k++) {
                 onProperty(node, stream, 0, stream->property(k));
             }
         }
 
-        for (int j=0; j < node->numInputPin(); j++) {
-            NamedPin * pin = node->inputPin(j);
-            onPin(node,pin);
-            for (int k=0; k < pin->numProperty(); k++) {
+        for (int j = 0; j < node->numInputPin(); j++) {
+            NamedPin* pin = node->inputPin(j);
+            onPin(node, pin);
+            for (int k = 0; k < pin->numProperty(); k++) {
                 onProperty(node, 0, pin, pin->property(k));
             }
         }
     }
-
 }
 
-} //namespace media_graph
+}  // namespace media_graph

@@ -30,7 +30,6 @@
 #include "http_server.h"
 
 namespace media_graph {
-
 class Graph;
 
 /*! This class opens a web server that gives access to a media_graph::Graph object.
@@ -40,10 +39,10 @@ class Graph;
  * in current directory.
  */
 class GraphHttpServer : HttpServer {
-  public:
+public:
     //! Starts the http server. "graph" has to remain valid during the life
     //! of the constructed object.
-    GraphHttpServer(Graph *graph, int port, const std::string& public_directory=".");
+    GraphHttpServer(Graph* graph, int port, const std::string& public_directory = ".");
 
     Graph* graph_;
 };

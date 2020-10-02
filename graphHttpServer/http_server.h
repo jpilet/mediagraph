@@ -37,24 +37,25 @@ class HttpServerCivetHandler;
 
 extern "C" struct mg_connection;
 
-
 /*! This structure contains the reply to the http request
- *  for the given connection 
+ *  for the given connection
  */
 class HttpReply {
-
 public:
-    HttpReply(mg_connection *conn) : conn_(conn) { setOK(); setTextContent(); }
+    HttpReply(mg_connection* conn) : conn_(conn) {
+        setOK();
+        setTextContent();
+    }
 
     void setOK() { status = "200 OK"; }
 
-    void setNotFound() { status ="404 Not Found"; }
+    void setNotFound() { status = "404 Not Found"; }
 
     void setAjaxContent() { content_type = "application/x-javascript"; }
 
     void setTextContent() { content_type = "text/plain"; }
 
-    void send() ;
+    void send();
 
     void handleJsonp();
 
@@ -67,19 +68,18 @@ public:
     std::string content_type;
 
 private:
-    mg_connection *conn_;
-
+    mg_connection* conn_;
 };
 
 /*! This class opens a web server using mongoose.
  * The constructors starts the server, the destructor stops it.
- * By default, the server serves files in the current directory. 
- * To change this behavior, the "publicDirectory" argument of the 
- * constructor tells where to serve the files from. To add dynamic 
+ * By default, the server serves files in the current directory.
+ * To change this behavior, the "publicDirectory" argument of the
+ * constructor tells where to serve the files from. To add dynamic
  * pages, overload onNewRequest().
  */
 class HttpServer {
-  public:
+public:
     enum Method { GET, POST, HEAD, PUT, DELETE, OPTIONS, PATCH };
 
     HttpServer(int port, const std::string& publicDirectory = ".");
@@ -88,7 +88,7 @@ class HttpServer {
     void setHandler(Method method, const std::string& uri,
                     std::function<bool(std::unique_ptr<HttpReply>)> cb);
 
-  private:
+private:
     friend class HttpServerCivetHandler;
 
     // Copy construction is forbidden
@@ -97,6 +97,5 @@ class HttpServer {
     std::unique_ptr<CivetServer> civet_server_;
     std::map<std::string, std::shared_ptr<HttpServerCivetHandler>> handlers_;
 };
-
 
 #endif  // HTTP_SERVER_H

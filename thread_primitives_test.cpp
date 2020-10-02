@@ -30,13 +30,11 @@
 #include "thread_primitives.h"
 #include "timestamp.h"
 
-static void do_nothing(void *) {
-    return;
-}
+static void do_nothing(void*) { return; }
 
 TEST(ThreadTest, CanJoinAndRunningIsFalseWhenThreadEnds) {
     Thread thread;
-    EXPECT_TRUE(thread.start(do_nothing, (void *)7));
+    EXPECT_TRUE(thread.start(do_nothing, (void*)7));
     thread.waitForTermination();
     EXPECT_FALSE(thread.isRunning());
 }
@@ -46,9 +44,8 @@ TEST(ThreadTest, BasicCreation) {
     Thread unstarted;
 }
 
-static void never_returns(void *) {
-    while(1) {
-    }
+static void never_returns(void*) {
+    while (1) {}
 }
 
 TEST(ThreadTest, DeleteWhileRunning) {
@@ -59,22 +56,18 @@ TEST(ThreadTest, DeleteWhileRunning) {
     // timeout.
 }
 
-static void wait_a_bit(void *ptr) {
+static void wait_a_bit(void* ptr) {
     Duration::milliSeconds(10).sleep();
-    if (ptr) {
-        *static_cast<int *>(ptr) = 1;
-    }
+    if (ptr) { *static_cast<int*>(ptr) = 1; }
 }
 
 TEST(ThreadTest, MultipleStarts) {
     Thread thread;
     int done = 0;
     EXPECT_TRUE(thread.start(wait_a_bit, &done));
-    EXPECT_FALSE(thread.start(wait_a_bit, 0)); // already running
+    EXPECT_FALSE(thread.start(wait_a_bit, 0));  // already running
 
-    while (!done) {
-        Duration::milliSeconds(2).sleep();
-    }
+    while (!done) { Duration::milliSeconds(2).sleep(); }
     Duration::milliSeconds(2).sleep();
 
     // should work again.
@@ -90,16 +83,14 @@ TEST(ThreadTest, IsRunning) {
     // When instanciated, the thread shoud not be running.
     EXPECT_FALSE(thread.isRunning());
 
-	int done = 0;
+    int done = 0;
     EXPECT_TRUE(thread.start(wait_a_bit, &done));
 
     // We just started the thread, it should be running.
     EXPECT_TRUE(thread.isRunning());
 
-	while (!done) {
-		Duration::milliSeconds(2).sleep();
-	}
-	Duration::milliSeconds(2).sleep();
+    while (!done) { Duration::milliSeconds(2).sleep(); }
+    Duration::milliSeconds(2).sleep();
 
     // We waited long enough: the thread should have returned.
     EXPECT_FALSE(thread.isRunning());

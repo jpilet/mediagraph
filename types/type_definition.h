@@ -27,37 +27,29 @@
 #ifndef MEDIAGRAPH_TYPE_DEFINITION
 #define MEDIAGRAPH_TYPE_DEFINITION
 
-#include <string>
 #include <stdint.h>
+#include <string>
 
 namespace media_graph {
-
 namespace {
+    // General declaration, not actually implemented.
+    // types used in streams and properties must implement it.
+    // A good default implementation would be: typeid(T()).name()
+    // However, the resulting string would not be reliably consistent
+    // among compilers.
+    template <typename T> std::string typeName();
 
-// General declaration, not actually implemented.
-// types used in streams and properties must implement it.
-// A good default implementation would be: typeid(T()).name()
-// However, the resulting string would not be reliably consistent
-// among compilers.
-template<typename T> std::string typeName();
+    template <> inline std::string typeName<int>() { return "int"; }
 
-template<>
-inline std::string typeName<int>() { return "int"; }
+    template <> inline std::string typeName<int64_t>() { return "int64"; }
 
-template<>
-inline std::string typeName<int64_t>() { return "int64"; }
+    template <> inline std::string typeName<bool>() { return "bool"; }
 
-template<>
-inline std::string typeName<bool>() { return "bool"; }
+    template <> inline std::string typeName<float>() { return "float"; }
 
-template<>
-inline std::string typeName<float>() { return "float"; }
+    template <> inline std::string typeName<double>() { return "double"; }
 
-template<>
-inline std::string typeName<double>() { return "double"; }
-
-template<>
-inline std::string typeName<std::string>() { return "string"; }
+    template <> inline std::string typeName<std::string>() { return "string"; }
 
 }  // namespace
 

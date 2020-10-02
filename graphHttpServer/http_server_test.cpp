@@ -25,17 +25,13 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
 
-#include "../timestamp.h"
 #include "http_server.h"
+#include "../timestamp.h"
 
-
-int main(int argc, char **argv) {
-
+int main(int argc, char** argv) {
     HttpServer server(1212);
 
-    while(1) {
-        Duration::milliSeconds(10).sleep();
-    }
+    while (1) { Duration::milliSeconds(10).sleep(); }
 
     return 0;
 }

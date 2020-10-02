@@ -28,7 +28,6 @@
 #define MEDIAGRAPH_TYPE_VISITOR_H
 
 namespace media_graph {
-
 // A type visitor is used to express an operation that can be done on several
 // types. The invoker of a visitor does not need to know at compile time on what
 // type it operates. The type is resolved at runtime.
@@ -38,27 +37,27 @@ namespace media_graph {
 // With a serializer object that derives from TypeConstVisitor, it is still
 // possible to serialize the property.
 class TypeConstVisitor {
-  public:
-    virtual ~TypeConstVisitor() { }
+public:
+    virtual ~TypeConstVisitor() {}
 
-    virtual bool process(const int &value) = 0;
-    virtual bool process(const int64_t &value) = 0;
-    virtual bool process(const bool &value) = 0;
-    virtual bool process(const float &value) = 0;
-    virtual bool process(const double &value) = 0;
-    virtual bool process(const std::string &value) = 0;
+    virtual bool process(const int& value) = 0;
+    virtual bool process(const int64_t& value) = 0;
+    virtual bool process(const bool& value) = 0;
+    virtual bool process(const float& value) = 0;
+    virtual bool process(const double& value) = 0;
+    virtual bool process(const std::string& value) = 0;
 };
 
 class TypeVisitor {
-  public:
-    virtual ~TypeVisitor() { }
+public:
+    virtual ~TypeVisitor() {}
 
-    virtual bool process(int *value) = 0;
-    virtual bool process(int64_t *value) = 0;
-    virtual bool process(bool *value) = 0;
-    virtual bool process(float *value) = 0;
-    virtual bool process(double *value) = 0;
-    virtual bool process(std::string *value) = 0;
+    virtual bool process(int* value) = 0;
+    virtual bool process(int64_t* value) = 0;
+    virtual bool process(bool* value) = 0;
+    virtual bool process(float* value) = 0;
+    virtual bool process(double* value) = 0;
+    virtual bool process(std::string* value) = 0;
 };
 
 }  // namespace media_graph
