@@ -28,28 +28,27 @@
 #ifndef THREAD_PRIMITIVES_H
 #define THREAD_PRIMITIVES_H
 
-#include <thread>
 #include <future>
+#include <thread>
 
 // headers useful to create mutexes and cond vars
-#include <mutex>
 #include <condition_variable>
+#include <mutex>
 
 class Thread {
-  public:
+public:
     Thread() = default;
     ~Thread();
 
-    bool start(void (*func)(void *), void *ptr);
+    bool start(void (*func)(void*), void* ptr);
 
     bool isRunning() const;
 
     void waitForTermination();
 
-  private:
+private:
     std::thread thread_;
     std::future<void> running_future_;  // used to signal thread has finished
 };
-
 
 #endif  // THREAD_PRIMITIVES_H

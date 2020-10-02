@@ -33,20 +33,18 @@
 #include "stream_reader.h"
 
 namespace media_graph {
+class GraphVisitor {
+public:
+    void visit(Graph* graph);
 
-    class GraphVisitor {
+protected:
+    virtual void onNode(std::shared_ptr<NodeBase> /*node*/) {}
+    virtual void onStream(std::shared_ptr<NodeBase> /*node*/, NamedStream* /*stream*/) {}
+    virtual void onPin(std::shared_ptr<NodeBase> /*node*/, NamedPin* /*pin*/) {}
+    virtual void onProperty(std::shared_ptr<NodeBase> /*node*/, NamedStream* /*stream*/,
+                            NamedPin* /*pin*/, NamedProperty* /*prop*/) {}
+};
 
-    public:
-        void visit(Graph * graph);
+}  // namespace media_graph
 
-    protected:
-        virtual void onNode(std::shared_ptr<NodeBase> /*node*/) {}
-        virtual void onStream(std::shared_ptr<NodeBase> /*node*/, NamedStream * /*stream*/) {}
-        virtual void onPin(std::shared_ptr<NodeBase> /*node*/, NamedPin * /*pin*/) {}
-        virtual void onProperty(std::shared_ptr<NodeBase> /*node*/, NamedStream * /*stream*/, NamedPin * /*pin*/, NamedProperty * /*prop*/) {}  
-
-    };
-
-} //namespace media_graph
-
-#endif //GRAPH_VISITOR_H
+#endif  // GRAPH_VISITOR_H

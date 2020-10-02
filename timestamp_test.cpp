@@ -42,9 +42,7 @@ TEST(TimestampTest, CheckSmallestIncrement) {
     Timestamp timeAtStart(Timestamp::now());
 
     Timestamp aBitLater;
-    while (!(timeAtStart < aBitLater)) {
-        aBitLater = Timestamp::now();
-    }
+    while (!(timeAtStart < aBitLater)) { aBitLater = Timestamp::now(); }
 
     // We expect a timer accuracy of .1 millisecond.
     double difference = (aBitLater - timeAtStart).seconds();
@@ -56,8 +54,7 @@ TEST(TimestampTest, WaitLoop) {
     Timestamp timeAtStart(Timestamp::now());
     Timestamp later(Timestamp::now() + Duration::milliSeconds(30));
 
-    while (Timestamp::now() < later) {
-    }
+    while (Timestamp::now() < later) {}
     Timestamp after;
 
     Duration waiting_time(after - timeAtStart);
@@ -100,4 +97,3 @@ TEST(TimestampTest, Sleep) {
     // We want to be sure we waited at least the specified time.
     EXPECT_LE(wantedWaitTime.microSeconds(), actualWaitTime.microSeconds());
 }
-

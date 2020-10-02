@@ -39,18 +39,12 @@ class Timestamp;
 //!
 //! The default constructor gives a duration or length 0.
 class Duration {
-  public:
+public:
     Duration() { duration_ = 0; }
 
-    static Duration seconds(double sec) {
-        return Duration(int64_t(sec * 1e6));
-    }
-    static Duration milliSeconds(double msec) {
-        return Duration(int64_t(msec * 1e3));
-    }
-    static Duration microSeconds(int64_t microsec) {
-        return Duration(microsec);
-    }
+    static Duration seconds(double sec) { return Duration(int64_t(sec * 1e6)); }
+    static Duration milliSeconds(double msec) { return Duration(int64_t(msec * 1e3)); }
+    static Duration microSeconds(int64_t microsec) { return Duration(microsec); }
 
     int64_t microSeconds() const { return duration_; }
     int64_t milliSeconds() const { return duration_ / 1000; }
@@ -65,31 +59,23 @@ class Duration {
 
     Duration abs() const { return Duration(duration_ > 0 ? duration_ : -duration_); }
 
-    Duration operator + (Duration a) {
-        return Duration(duration_ + a.duration_);
-    }
+    Duration operator+(Duration a) { return Duration(duration_ + a.duration_); }
 
-    Duration operator - (Duration a) {
-        return Duration(duration_ - a.duration_);
-    }
+    Duration operator-(Duration a) { return Duration(duration_ - a.duration_); }
 
-    Duration operator * (double factor) {
-        return Duration(static_cast<int64_t>(duration_ * factor));
-    }
+    Duration operator*(double factor) { return Duration(static_cast<int64_t>(duration_ * factor)); }
 
-    Duration operator * (int64_t factor) {
-        return Duration(duration_ * factor);
-    }
+    Duration operator*(int64_t factor) { return Duration(duration_ * factor); }
 
-    bool operator < (Duration a) const { return duration_ < a.duration_; }
-    bool operator > (Duration a) const { return duration_ > a.duration_; }
-    bool operator <= (Duration a) const { return duration_ <= a.duration_; }
-    bool operator >= (Duration a) const { return duration_ >= a.duration_; }
-    bool operator == (Duration a) const { return duration_ == a.duration_; }
-    bool operator != (Duration a) const { return duration_ != a.duration_; }
+    bool operator<(Duration a) const { return duration_ < a.duration_; }
+    bool operator>(Duration a) const { return duration_ > a.duration_; }
+    bool operator<=(Duration a) const { return duration_ <= a.duration_; }
+    bool operator>=(Duration a) const { return duration_ >= a.duration_; }
+    bool operator==(Duration a) const { return duration_ == a.duration_; }
+    bool operator!=(Duration a) const { return duration_ != a.duration_; }
 
-  private:
-    explicit Duration(int64_t microsec) : duration_(microsec) { }
+private:
+    explicit Duration(int64_t microsec) : duration_(microsec) {}
 
     int64_t duration_;
 
@@ -102,53 +88,45 @@ class Duration {
 //! The unit test checks that it is at least 100 micro-sec.
 //! The internal unit is microseconds.
 class Timestamp {
-  public:
+public:
     //! Create a timestamp containing the creation time.
     Timestamp() { *this = now(); }
 
-	//! Returns a timestamp containing the current time.
+    //! Returns a timestamp containing the current time.
     static Timestamp now();
 
-    static Timestamp microSecondsSince1970(int64_t epoch) {
-        return Timestamp(epoch);
-    }
+    static Timestamp microSecondsSince1970(int64_t epoch) { return Timestamp(epoch); }
 
     int64_t microSecondsSince1970() const { return epoch_; }
 
-    bool operator < (Timestamp b) const { return epoch_ < b.epoch_; }
-    bool operator > (Timestamp b) const { return epoch_ > b.epoch_; }
-    bool operator <= (Timestamp b) const { return epoch_ <= b.epoch_; }
-    bool operator >= (Timestamp b) const { return epoch_ >= b.epoch_; }
-    bool operator == (Timestamp b) const { return epoch_ == b.epoch_; }
+    bool operator<(Timestamp b) const { return epoch_ < b.epoch_; }
+    bool operator>(Timestamp b) const { return epoch_ > b.epoch_; }
+    bool operator<=(Timestamp b) const { return epoch_ <= b.epoch_; }
+    bool operator>=(Timestamp b) const { return epoch_ >= b.epoch_; }
+    bool operator==(Timestamp b) const { return epoch_ == b.epoch_; }
 
-    Duration operator - (Timestamp t) const {
-        return Duration(epoch_ - t.epoch_);
-    }
+    Duration operator-(Timestamp t) const { return Duration(epoch_ - t.epoch_); }
 
-    Timestamp operator + (Duration d) const {
-        return Timestamp(epoch_ + d.duration_);
-    }
+    Timestamp operator+(Duration d) const { return Timestamp(epoch_ + d.duration_); }
 
-    Timestamp operator - (Duration d) const {
-        return Timestamp(epoch_ - d.duration_);
-    }
+    Timestamp operator-(Duration d) const { return Timestamp(epoch_ - d.duration_); }
 
-    Timestamp& operator += (Duration d) {
+    Timestamp& operator+=(Duration d) {
         epoch_ += d.duration_;
         return *this;
     }
 
-    Timestamp& operator -= (Duration d) {
+    Timestamp& operator-=(Duration d) {
         epoch_ -= d.duration_;
         return *this;
     }
 
     //! Returns a string to represent the time and date.
     //! The time is printed as UTC time.
-    std::string asString(const char *strftime_format = "%Y.%m.%d - %H:%M:%S") const;
+    std::string asString(const char* strftime_format = "%Y.%m.%d - %H:%M:%S") const;
 
-  private:
-    explicit Timestamp(int64_t t) : epoch_(t) { }
+private:
+    explicit Timestamp(int64_t t) : epoch_(t) {}
 
     // Unit: microseconds (1e-6 seconds) elapsed since Jan. 1st 1970, UTC.
     int64_t epoch_;

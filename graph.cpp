@@ -35,7 +35,6 @@
 using std::string;
 
 namespace media_graph {
-
 Graph::Graph() : started_(false), stopping_(false) {
     addGetProperty("started", this, &Graph::isStarted);
 }
@@ -60,10 +59,10 @@ void Graph::removeNode(const std::string& name) {
     if (it != nodes_.end()) {
         auto node = it->second;
         nodes_.erase(it);
-        
+
         node->disconnectAllPins();
         node->disconnectAllStreams();
-        
+
         // Make sure to unlock before "node" is destroyed.
         lock.unlock();
     }
@@ -76,20 +75,15 @@ std::shared_ptr<NodeBase> Graph::getNodeByName(const std::string& name) {
 
 std::shared_ptr<NodeBase> Graph::lockedGetNodeByName(const std::string& name) {
     auto it = nodes_.find(name);
-    if (it != nodes_.end()) {
-        return it->second;
-    }
+    if (it != nodes_.end()) { return it->second; }
     return std::shared_ptr<NodeBase>();
 }
 
 bool Graph::start() {
-    if (isStarted()) {
-        return true;
-    }
+    if (isStarted()) { return true; }
 
     std::lock_guard<std::mutex> lock(mutex_);
-    for (auto it = nodes_.begin();
-         it != nodes_.end(); ++it) {
+    for (auto it = nodes_.begin(); it != nodes_.end(); ++it) {
         if (!it->second->start()) {
             // TODO: give a meaningful error.
             lockedStop();  // stop potentially started nodes.
@@ -101,18 +95,14 @@ bool Graph::start() {
 }
 
 bool Graph::isStarted() const {
-    for (auto it: nodes_) {
-        if (it.second->isRunning()) {
-            return true;
-        }
+    for (auto it : nodes_) {
+        if (it.second->isRunning()) { return true; }
     }
     return false;
 }
 
 void Graph::waitUntilStopped() const {
-    for (auto it: nodes_) {
-        it.second->waitUntilStopped();
-    }
+    for (auto it : nodes_) { it.second->waitUntilStopped(); }
 }
 
 void Graph::stop() {
@@ -126,8 +116,7 @@ void Graph::stop() {
 }
 
 void Graph::lockedStop() {
-    for (auto it = nodes_.begin();
-         it != nodes_.end(); ++it) {
+    for (auto it = nodes_.begin(); it != nodes_.end(); ++it) {
         it->second->closeConnectedPins();
         it->second->stop();
     }
@@ -137,30 +126,22 @@ void Graph::lockedStop() {
 void Graph::clear() {
     stop();
 
-    while (nodes_.size()) {
-        removeNode(nodes_.begin()->first);
-    }
+    while (nodes_.size()) { removeNode(nodes_.begin()->first); }
 }
 
 bool Graph::connect(NamedStream* stream, NamedPin* pin) {
-    if (!stream || !pin) {
-        return false;
-    }
+    if (!stream || !pin) { return false; }
 
     // We allow streams and pins not belonging to any node.
     assert(!stream->node() || stream->node()->graph() == this);
     assert(!pin->node() || pin->node()->graph() == this);
- 
+
     return pin->connect(stream);
 }
 
-bool Graph::connect(std::shared_ptr<NodeBase> source,
-                    const std::string& streamName,
-                    std::shared_ptr<NodeBase> dest,
-                    const std::string& pinName) {
-    if (!source || !dest) {
-        return false;
-    }
+bool Graph::connect(std::shared_ptr<NodeBase> source, const std::string& streamName,
+                    std::shared_ptr<NodeBase> dest, const std::string& pinName) {
+    if (!source || !dest) { return false; }
     NamedStream* stream = source->getOutputStreamByName(streamName);
     NamedPin* pin = dest->getInputPinByName(pinName);
     return connect(stream, pin);
@@ -168,16 +149,13 @@ bool Graph::connect(std::shared_ptr<NodeBase> source,
 
 bool Graph::connect(const std::string& source_name, const std::string& streamName,
                     const std::string& dest_name, const std::string& pinName) {
-    return connect(getNodeByName(source_name), streamName,
-                   getNodeByName(dest_name), pinName);
+    return connect(getNodeByName(source_name), streamName, getNodeByName(dest_name), pinName);
 }
 
 std::shared_ptr<NodeBase> Graph::node(int num) const {
     auto it = nodes_.begin();
     for (int i = 0; i < num; ++i) {
-        if (it == nodes_.end()) {
-            return nullptr;
-        }
+        if (it == nodes_.end()) { return nullptr; }
         ++it;
     }
     return it->second;

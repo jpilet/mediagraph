@@ -29,11 +29,10 @@
 
 #include <string>
 
-#include "thread_primitives.h"
 #include "property.h"
+#include "thread_primitives.h"
 
 namespace media_graph {
-
 class Graph;
 class NamedStream;
 class NamedPin;
@@ -42,7 +41,7 @@ class NamedPin;
  * provides reflection on pins.
  */
 class NodeBase : public PropertyList {
-  public:
+public:
     NodeBase();
 
     virtual ~NodeBase();
@@ -71,7 +70,7 @@ class NodeBase : public PropertyList {
     virtual int numOutputStream() const { return 0; }
 
     /// Returns a pointer to outputStream number <index>, or 0 if index is out
-    /// of range. 
+    /// of range.
     virtual const NamedStream* constOutputStream(int) const { return 0; }
 
     NamedStream* outputStream(int index) {
@@ -83,7 +82,7 @@ class NodeBase : public PropertyList {
 
     /// Returns the number of input pins. Any node with at least one input pins
     /// must overload this method.
-    virtual int numInputPin() const { return 0; } 
+    virtual int numInputPin() const { return 0; }
 
     /// Returns a pointer to input pin number <index>, or null if index is out
     /// of range. Nodes with input pins must overload this method.
@@ -120,13 +119,13 @@ class NodeBase : public PropertyList {
     // unplug the node from the graph.
     void detach();
 
-  private:
+private:
     mutable std::condition_variable pin_activity_;
     mutable std::mutex pin_activity_mutex_;
 
     mutable std::condition_variable stop_event_;
     mutable std::mutex stop_event_mutex_;
-    
+
     Graph* graph_;
     std::string name_;
     bool running_;
@@ -137,7 +136,7 @@ class NodeBase : public PropertyList {
  *  To use, derive from ThreadedNodeBase and implement threadMain().
  */
 class ThreadedNodeBase : public NodeBase {
-  public:
+public:
     virtual ~ThreadedNodeBase();
 
     // Starts all output streams + the thread.
@@ -152,7 +151,7 @@ class ThreadedNodeBase : public NodeBase {
 
     bool startThread();
 
-  protected:
+protected:
     /*! Inheriting classes must implement a thread loop, in the form:
      *  while (!threadMustQuit()) { }
      */
@@ -160,8 +159,8 @@ class ThreadedNodeBase : public NodeBase {
 
     bool threadMustQuit() const { return thread_must_quit_ || !allPinsConnectedAndOpen(); }
 
-  private:
-    static void threadEntryPoint(void *ptr);
+private:
+    static void threadEntryPoint(void* ptr);
     Thread thread_;
     std::thread::id creating_thread_id_;
     bool thread_must_quit_;

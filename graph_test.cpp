@@ -34,191 +34,184 @@
 #include "types/type_definition.h"
 
 namespace media_graph {
-
 namespace {
-
-class TimestampIncrementerStream : public StreamBase<int> {
-  public:
-    TimestampIncrementerStream(NodeBase *node) : StreamBase<int>("Timestamp incrementer", node) { sequence_no_ = 0; }
-    virtual std::string typeName() const { return "int"; }
-    virtual bool tryRead(StreamReader<int>* reader,
-                         int* data, Timestamp* timestamp, SequenceId* seq) {
-        *timestamp = Timestamp::now();
-        *data = ++(*reader->lastReadSequenceIdPtr());
-        if (seq) {
-            *seq = *data;
+    class TimestampIncrementerStream : public StreamBase<int> {
+    public:
+        TimestampIncrementerStream(NodeBase* node)
+            : StreamBase<int>("Timestamp incrementer", node) {
+            sequence_no_ = 0;
         }
-        return true;
-    }
-    virtual bool read(StreamReader<int>* reader,
-                      int* data, Timestamp* timestamp, SequenceId *seq) {
-        while (!(reader->seekPosition() < Timestamp::now())) {
+        virtual std::string typeName() const { return "int"; }
+        virtual bool tryRead(StreamReader<int>* reader, int* data, Timestamp* timestamp,
+                             SequenceId* seq) {
+            *timestamp = Timestamp::now();
+            *data = ++(*reader->lastReadSequenceIdPtr());
+            if (seq) { *seq = *data; }
+            return true;
         }
-        return tryRead(reader, data, timestamp, seq);
-    }
-    virtual bool canRead(SequenceId consumed_until, Timestamp fresher_than) const {
-        return consumed_until < sequence_no_ && fresher_than < Timestamp::now();
-    }
-  private:
-    int sequence_no_;
-};
+        virtual bool read(StreamReader<int>* reader, int* data, Timestamp* timestamp,
+                          SequenceId* seq) {
+            while (!(reader->seekPosition() < Timestamp::now())) {}
+            return tryRead(reader, data, timestamp, seq);
+        }
+        virtual bool canRead(SequenceId consumed_until, Timestamp fresher_than) const {
+            return consumed_until < sequence_no_ && fresher_than < Timestamp::now();
+        }
 
-class IntProducerNode : public NodeBase {
-  public:
-    IntProducerNode() : output_stream(this) { }
+    private:
+        int sequence_no_;
+    };
 
-    virtual int numOutputStream() const { return 1; }
-    virtual const NamedStream* constOutputStream(int index) const {
-        if (index == 0) return &output_stream;
-        return 0;
-    }
+    class IntProducerNode : public NodeBase {
+    public:
+        IntProducerNode() : output_stream(this) {}
 
-  private:
-    TimestampIncrementerStream output_stream;
-};
+        virtual int numOutputStream() const { return 1; }
+        virtual const NamedStream* constOutputStream(int index) const {
+            if (index == 0) return &output_stream;
+            return 0;
+        }
 
-class IntConsumerNode : public NodeBase {
-  public:
-    IntConsumerNode() : input("int", this) { }
+    private:
+        TimestampIncrementerStream output_stream;
+    };
 
-    virtual int numInputPin() const { return 1; }
-    virtual const NamedPin* constInputPin(int index) const {
-        if (index == 0) return &input;
-        return 0;
-    }
+    class IntConsumerNode : public NodeBase {
+    public:
+        IntConsumerNode() : input("int", this) {}
 
-    void testSequentialRead(Timestamp after) {
-        int value;
-        Timestamp timestamp;
-        EXPECT_TRUE(input.seek(after));
-        EXPECT_TRUE(input.read(&value, &timestamp));
-    }
+        virtual int numInputPin() const { return 1; }
+        virtual const NamedPin* constInputPin(int index) const {
+            if (index == 0) return &input;
+            return 0;
+        }
 
-    void testTryRead(Timestamp after) {
-        int value;
-        Timestamp timestamp;
-        EXPECT_TRUE(input.seek(after));
-        EXPECT_TRUE(input.tryRead(&value, &timestamp));
-    }
-
-    void testReadFrom(Timestamp bound, int num_to_read) {
-        EXPECT_TRUE(input.seek(bound));
-        Timestamp last_timestamp = bound;
-        SequenceId last_sequence_id = -1;
-        for (int i = 0; i < num_to_read; ++i) {
+        void testSequentialRead(Timestamp after) {
             int value;
             Timestamp timestamp;
-            SequenceId sequence_id;
-            EXPECT_TRUE(input.read(&value, &timestamp, &sequence_id));
-
-            // Make sure the time is monotonic.
-            EXPECT_TRUE(!(timestamp < last_timestamp));
-            EXPECT_LT(last_sequence_id, sequence_id);
-            last_timestamp = timestamp;
-            last_sequence_id = sequence_id;
+            EXPECT_TRUE(input.seek(after));
+            EXPECT_TRUE(input.read(&value, &timestamp));
         }
-    }
 
-  private:
-    StreamReader<int> input;
-};
-
-class ThreadedIntProducer : public ThreadedNodeBase {
-  public:
-    ThreadedIntProducer(Duration limit = Duration())
-        : output_stream("out", this), time_limit_(limit) { }
-
-    virtual void threadMain() {
-        int sequence_no = 0;
-        Timestamp start_time = Timestamp::now();
-
-        while (!threadMustQuit()) {
-            // push as fast as we can.
-            Timestamp timestamp = Timestamp::now();
-            if (time_limit_ != Duration() && (timestamp - start_time) > time_limit_) {
-                std::cout << "Time limit reached, exiting producer thread.\n";
-                return;
-            }
-            if (!output_stream.update(timestamp, sequence_no))
-                break;
-            ++sequence_no;
-        }
-    }
-    virtual int numOutputStream() const { return 1; }
-    virtual const NamedStream* constOutputStream(int index) const {
-        if (index == 0) return &output_stream;
-        return 0;
-    }
-  private:
-    Stream<int> output_stream;
-    Duration time_limit_;
-};
-
-class ThreadedPassThrough : public ThreadedNodeBase {
-  public:
-    ThreadedPassThrough()
-        : output_stream("out", this), input_stream("in", this) { }
-
-    virtual void threadMain() {
-        while (!threadMustQuit()) {
-            int data;
+        void testTryRead(Timestamp after) {
+            int value;
             Timestamp timestamp;
-            if (!input_stream.read(&data, &timestamp)) {
-                break;
+            EXPECT_TRUE(input.seek(after));
+            EXPECT_TRUE(input.tryRead(&value, &timestamp));
+        }
+
+        void testReadFrom(Timestamp bound, int num_to_read) {
+            EXPECT_TRUE(input.seek(bound));
+            Timestamp last_timestamp = bound;
+            SequenceId last_sequence_id = -1;
+            for (int i = 0; i < num_to_read; ++i) {
+                int value;
+                Timestamp timestamp;
+                SequenceId sequence_id;
+                EXPECT_TRUE(input.read(&value, &timestamp, &sequence_id));
+
+                // Make sure the time is monotonic.
+                EXPECT_TRUE(!(timestamp < last_timestamp));
+                EXPECT_LT(last_sequence_id, sequence_id);
+                last_timestamp = timestamp;
+                last_sequence_id = sequence_id;
             }
-            if (!output_stream.update(timestamp, data)) {
-                break;
+        }
+
+    private:
+        StreamReader<int> input;
+    };
+
+    class ThreadedIntProducer : public ThreadedNodeBase {
+    public:
+        ThreadedIntProducer(Duration limit = Duration())
+            : output_stream("out", this), time_limit_(limit) {}
+
+        virtual void threadMain() {
+            int sequence_no = 0;
+            Timestamp start_time = Timestamp::now();
+
+            while (!threadMustQuit()) {
+                // push as fast as we can.
+                Timestamp timestamp = Timestamp::now();
+                if (time_limit_ != Duration() && (timestamp - start_time) > time_limit_) {
+                    std::cout << "Time limit reached, exiting producer thread.\n";
+                    return;
+                }
+                if (!output_stream.update(timestamp, sequence_no)) break;
+                ++sequence_no;
             }
         }
-    }
-
-    virtual int numInputPin() const { return 1; }
-    virtual const NamedPin* constInputPin(int index) const {
-        return (index == 0 ? &input_stream : 0);
-    }
-    virtual int numOutputStream() const { return 1; }
-    virtual const NamedStream* constOutputStream(int index) const {
-        if (index == 0) return &output_stream;
-        return 0;
-    }
-
-  private:
-    Stream<int> output_stream;
-    StreamReader<int> input_stream;
-};
-
-class JoinAndCheckEquals : public NodeBase {
-  public:
-    JoinAndCheckEquals() : input_a("a", this), input_b("b", this) { }
-
-    virtual int numInputPin() const { return 2; }
-    virtual const NamedPin* constInputPin(int i) const {
-        switch(i) {
-            case 0: return &input_a;
-            case 1: return &input_b;
+        virtual int numOutputStream() const { return 1; }
+        virtual const NamedStream* constOutputStream(int index) const {
+            if (index == 0) return &output_stream;
+            return 0;
         }
-        return 0;
-    }
 
-    void testSyncFromA(int num_iterations) {
-        for (int i = 0; i < num_iterations; ++i) {
-            int value_a;
-            Timestamp timestamp_a;
-            EXPECT_TRUE(input_a.read(&value_a, &timestamp_a));
-            int value_b;
-            Timestamp timestamp_b;
-            EXPECT_TRUE(input_b.seek(timestamp_a - Duration::microSeconds(1)));
-            EXPECT_TRUE(input_b.read(&value_b, &timestamp_b));
-            EXPECT_EQ(0, (timestamp_a - timestamp_b).milliSeconds());
-            EXPECT_EQ(value_a, value_b);
+    private:
+        Stream<int> output_stream;
+        Duration time_limit_;
+    };
+
+    class ThreadedPassThrough : public ThreadedNodeBase {
+    public:
+        ThreadedPassThrough() : output_stream("out", this), input_stream("in", this) {}
+
+        virtual void threadMain() {
+            while (!threadMustQuit()) {
+                int data;
+                Timestamp timestamp;
+                if (!input_stream.read(&data, &timestamp)) { break; }
+                if (!output_stream.update(timestamp, data)) { break; }
+            }
         }
-    }
 
-  private:
-    StreamReader<int> input_a;
-    StreamReader<int> input_b;
-};
+        virtual int numInputPin() const { return 1; }
+        virtual const NamedPin* constInputPin(int index) const {
+            return (index == 0 ? &input_stream : 0);
+        }
+        virtual int numOutputStream() const { return 1; }
+        virtual const NamedStream* constOutputStream(int index) const {
+            if (index == 0) return &output_stream;
+            return 0;
+        }
 
+    private:
+        Stream<int> output_stream;
+        StreamReader<int> input_stream;
+    };
+
+    class JoinAndCheckEquals : public NodeBase {
+    public:
+        JoinAndCheckEquals() : input_a("a", this), input_b("b", this) {}
+
+        virtual int numInputPin() const { return 2; }
+        virtual const NamedPin* constInputPin(int i) const {
+            switch (i) {
+                case 0: return &input_a;
+                case 1: return &input_b;
+            }
+            return 0;
+        }
+
+        void testSyncFromA(int num_iterations) {
+            for (int i = 0; i < num_iterations; ++i) {
+                int value_a;
+                Timestamp timestamp_a;
+                EXPECT_TRUE(input_a.read(&value_a, &timestamp_a));
+                int value_b;
+                Timestamp timestamp_b;
+                EXPECT_TRUE(input_b.seek(timestamp_a - Duration::microSeconds(1)));
+                EXPECT_TRUE(input_b.read(&value_b, &timestamp_b));
+                EXPECT_EQ(0, (timestamp_a - timestamp_b).milliSeconds());
+                EXPECT_EQ(value_a, value_b);
+            }
+        }
+
+    private:
+        StreamReader<int> input_a;
+        StreamReader<int> input_b;
+    };
 
 }  // namespace
 
@@ -305,7 +298,7 @@ TEST(GraphTest, HotPlug) {
               /--> a --\
              /          \
  producer ->-            ----> consumer
-             \          / 
+             \          /
               \--> b --/
 
 */
@@ -326,20 +319,19 @@ TEST(GraphTest, JoinSync) {
     EXPECT_TRUE(graph.connect("a", "out", "consumer", "a"));
     EXPECT_TRUE(graph.connect("b", "out", "consumer", "b"));
 
-
     EXPECT_TRUE(graph.start());
 
     consumer->testSyncFromA(10);
     graph.stop();
 }
-    
+
 class ThreadedIntConsumer : public ThreadedNodeBase {
-  public:
-    ThreadedIntConsumer() : input_("in", this) { }
+public:
+    ThreadedIntConsumer() : input_("in", this) {}
 
     virtual int numInputPin() const { return 1; }
     virtual const NamedPin* constInputPin(int i) const {
-        switch(i) {
+        switch (i) {
             case 0: return &input_;
         }
         return 0;
@@ -356,7 +348,8 @@ class ThreadedIntConsumer : public ThreadedNodeBase {
             input_.read(&value, &timestamp);
         }
     }
-  private:
+
+private:
     StreamReader<int> input_;
 };
 

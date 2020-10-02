@@ -30,9 +30,7 @@
 #include <unistd.h>
 
 void Duration::sleep() const {
-    if (duration_ > 0) {
-        usleep(duration_);
-    }
+    if (duration_ > 0) { usleep(duration_); }
 }
 
 Timestamp Timestamp::now() {
@@ -41,7 +39,7 @@ Timestamp Timestamp::now() {
     return Timestamp(int64_t(time.tv_sec) * 1000000 + int64_t(time.tv_usec));
 }
 
-std::string Timestamp::asString(const char *strftime_format) const {
+std::string Timestamp::asString(const char* strftime_format) const {
     struct tm t;
     time_t seconds_since_epoch = epoch_ / 1000000;
 

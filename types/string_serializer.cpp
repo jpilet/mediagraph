@@ -26,101 +26,86 @@
 //
 #include "string_serializer.h"
 
-#include <stdint.h>
 #include <assert.h>
+#include <stdint.h>
 #include <sstream>
 
 namespace media_graph {
-
-template <typename T> std::string toString(T tmp)
-{
-    std::stringstream  sstr;
+template <typename T> std::string toString(T tmp) {
+    std::stringstream sstr;
     sstr << tmp;
     return sstr.str();
 }
 
-
-template <typename T> T fromString(std::string strValue)
-{
+template <typename T> T fromString(std::string strValue) {
     T tmp;
-    std::stringstream  sstr;
+    std::stringstream sstr;
     sstr << strValue;
     sstr >> tmp;
     return tmp;
 }
 
-
-bool StringSerializer::process(const int &value) {
+bool StringSerializer::process(const int& value) {
     serialized_value_ = toString(value);
     return true;
 }
 
-bool StringDeSerializer::process(int *value) {
-    if (serialized_value_.size() < 1) {
-        return false;
-    }
+bool StringDeSerializer::process(int* value) {
+    if (serialized_value_.size() < 1) { return false; }
     *value = fromString<int>(serialized_value_);
     return true;
 }
 
-bool StringSerializer::process(const int64_t &value) {
+bool StringSerializer::process(const int64_t& value) {
     serialized_value_ = toString(value);
     return true;
 }
 
-bool StringDeSerializer::process(int64_t *value) {
-    if (serialized_value_.size() < 1) {
-        return false;
-    }
+bool StringDeSerializer::process(int64_t* value) {
+    if (serialized_value_.size() < 1) { return false; }
     *value = fromString<int64_t>(serialized_value_);
     return true;
 }
 
-bool StringSerializer::process(const bool &value) {
+bool StringSerializer::process(const bool& value) {
     serialized_value_ = toString(value);
     return true;
 }
 
-bool StringDeSerializer::process(bool *value) {
-    if (serialized_value_.size() < 1) {
-        return false;
-    }
+bool StringDeSerializer::process(bool* value) {
+    if (serialized_value_.size() < 1) { return false; }
     *value = fromString<bool>(serialized_value_);
     return true;
 }
 
-bool StringSerializer::process(const float &value) {
+bool StringSerializer::process(const float& value) {
     serialized_value_ = toString(value);
     return true;
 }
 
-bool StringDeSerializer::process(float *value) {
-    if (serialized_value_.size() < 1) {
-        return false;
-    }
+bool StringDeSerializer::process(float* value) {
+    if (serialized_value_.size() < 1) { return false; }
     *value = fromString<float>(serialized_value_);
     return true;
 }
 
-bool StringSerializer::process(const double &value) {
+bool StringSerializer::process(const double& value) {
     serialized_value_ = toString(value);
     return true;
 }
 
-bool StringDeSerializer::process(double *value) {
-    if (serialized_value_.size() < 1) {
-        return false;
-    }
+bool StringDeSerializer::process(double* value) {
+    if (serialized_value_.size() < 1) { return false; }
     *value = fromString<double>(serialized_value_);
     return true;
 }
 
-bool StringSerializer::process(const std::string &value) {
+bool StringSerializer::process(const std::string& value) {
     serialized_value_ = toString(value);
     return true;
 }
 
-bool StringDeSerializer::process(std::string *value) {
+bool StringDeSerializer::process(std::string* value) {
     *value = serialized_value_;
     return true;
 }

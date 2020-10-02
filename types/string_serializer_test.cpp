@@ -29,18 +29,15 @@
 #include "string_serializer.h"
 
 namespace media_graph {
-
 namespace {
-
-template <typename T>
-void GenericSerializationTest(const T &value) {
-    StringSerializer serializer;
-    EXPECT_TRUE(serializer.process(value));
-    StringDeSerializer deSerializer(serializer.value());
-    T result;
-    EXPECT_TRUE(deSerializer.process(&result));
-    EXPECT_EQ(result, value);
-}
+    template <typename T> void GenericSerializationTest(const T& value) {
+        StringSerializer serializer;
+        EXPECT_TRUE(serializer.process(value));
+        StringDeSerializer deSerializer(serializer.value());
+        T result;
+        EXPECT_TRUE(deSerializer.process(&result));
+        EXPECT_EQ(result, value);
+    }
 
 }  // namespace
 
@@ -90,9 +87,7 @@ TEST(StringSerializerTest, StringTest) {
     GenericSerializationTest(value);
 
     // Test weird values, including 0.
-    for (int i = 0; i < 7; ++i) {
-        value.push_back(i);
-    }
+    for (int i = 0; i < 7; ++i) { value.push_back(i); }
     GenericSerializationTest(value);
 }
 

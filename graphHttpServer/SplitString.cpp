@@ -1,13 +1,13 @@
 #include "SplitString.h"
-#include <string>
-#include <sstream>
 #include <algorithm>
 #include <iterator>
- 
-std::vector<std::string> SplitString(const std::string &base, const char *sep) {
+#include <sstream>
+#include <string>
+
+std::vector<std::string> SplitString(const std::string& base, const char* sep) {
     std::vector<std::string> result;
 
-    for (size_t pos = 0; pos < base.size(); ) {
+    for (size_t pos = 0; pos < base.size();) {
         size_t delimiter = base.find_first_of(sep, pos);
         if (delimiter == pos) {
             // we have an empty entry, we skip
@@ -22,4 +22,3 @@ std::vector<std::string> SplitString(const std::string &base, const char *sep) {
     }
     return result;
 }
-

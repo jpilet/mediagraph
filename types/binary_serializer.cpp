@@ -26,69 +26,59 @@
 //
 #include "binary_serializer.h"
 
-#include <stdint.h>
 #include <assert.h>
+#include <stdint.h>
 
 namespace media_graph {
-
-bool BinarySerializer::process(const int &value) {
+bool BinarySerializer::process(const int& value) {
     serialized_value_.push_back((value >> 24) & 0xFF);
     serialized_value_.push_back((value >> 16) & 0xFF);
-    serialized_value_.push_back((value >>  8) & 0xFF);
-    serialized_value_.push_back((value >>  0) & 0xFF);
+    serialized_value_.push_back((value >> 8) & 0xFF);
+    serialized_value_.push_back((value >> 0) & 0xFF);
     return true;
 }
 
-bool BinaryDeSerializer::process(int *value) {
-    if (serialized_value_.size() < 4) {
-        return false;
-    }
+bool BinaryDeSerializer::process(int* value) {
+    if (serialized_value_.size() < 4) { return false; }
 
-    *value = ((static_cast<unsigned char>(serialized_value_[0])) << 24)
-        + ((static_cast<unsigned char>(serialized_value_[1])) << 16)
-        + ((static_cast<unsigned char>(serialized_value_[2])) << 8)
-        + ((static_cast<unsigned char>(serialized_value_[3])) << 0);
+    *value = ((static_cast<unsigned char>(serialized_value_[0])) << 24) +
+             ((static_cast<unsigned char>(serialized_value_[1])) << 16) +
+             ((static_cast<unsigned char>(serialized_value_[2])) << 8) +
+             ((static_cast<unsigned char>(serialized_value_[3])) << 0);
     serialized_value_.erase(0, 4);
     return true;
 }
 
-bool BinarySerializer::process(const int64_t &value) {
-    for (int i = 0; i < 8; ++i) {
-        serialized_value_.push_back((value >> ((7 - i) * 8)) & 0xFF);
-    }
+bool BinarySerializer::process(const int64_t& value) {
+    for (int i = 0; i < 8; ++i) { serialized_value_.push_back((value >> ((7 - i) * 8)) & 0xFF); }
     return true;
 }
 
-bool BinaryDeSerializer::process(int64_t *value) {
-    if (serialized_value_.size() < 8) {
-        return false;
-    }
+bool BinaryDeSerializer::process(int64_t* value) {
+    if (serialized_value_.size() < 8) { return false; }
 
     *value = 0;
     for (int i = 0; i < 8; ++i) {
-        *value += int64_t(static_cast<unsigned char>(serialized_value_[i]))
-            << ((7 - i) * 8);
+        *value += int64_t(static_cast<unsigned char>(serialized_value_[i])) << ((7 - i) * 8);
     }
     serialized_value_.erase(0, 8);
     return true;
 }
 
-bool BinarySerializer::process(const bool &value) {
+bool BinarySerializer::process(const bool& value) {
     serialized_value_.push_back(value ? 0xFF : 0);
     return true;
 }
 
-bool BinaryDeSerializer::process(bool *value) {
-    if (serialized_value_.size() < 1) {
-        return false;
-    }
+bool BinaryDeSerializer::process(bool* value) {
+    if (serialized_value_.size() < 1) { return false; }
 
     *value = (serialized_value_[0] != 0);
     serialized_value_.erase(0, 1);
     return true;
 }
 
-bool BinarySerializer::process(const float &value) {
+bool BinarySerializer::process(const float& value) {
     union {
         int as_int;
         float as_float;
@@ -97,7 +87,7 @@ bool BinarySerializer::process(const float &value) {
     return process(mixedValue.as_int);
 }
 
-bool BinaryDeSerializer::process(float *value) {
+bool BinaryDeSerializer::process(float* value) {
     assert(sizeof(int) == sizeof(float));
     union {
         int as_int;
@@ -110,7 +100,7 @@ bool BinaryDeSerializer::process(float *value) {
     return false;
 }
 
-bool BinarySerializer::process(const double &value) {
+bool BinarySerializer::process(const double& value) {
     union {
         int64_t as_int64_t;
         double as_double;
@@ -119,7 +109,7 @@ bool BinarySerializer::process(const double &value) {
     return process(mixedValue.as_int64_t);
 }
 
-bool BinaryDeSerializer::process(double *value) {
+bool BinaryDeSerializer::process(double* value) {
     assert(sizeof(int64_t) == sizeof(double));
     union {
         int64_t as_int64_t;
@@ -132,18 +122,16 @@ bool BinaryDeSerializer::process(double *value) {
     return false;
 }
 
-bool BinarySerializer::process(const std::string &value) {
+bool BinarySerializer::process(const std::string& value) {
     int length(value.size());
     process(length);
     serialized_value_.append(value);
     return true;
 }
 
-bool BinaryDeSerializer::process(std::string *value) {
+bool BinaryDeSerializer::process(std::string* value) {
     int length;
-    if (!process(&length)) {
-        return false;
-    }
+    if (!process(&length)) { return false; }
     *value = serialized_value_.substr(0, length);
     serialized_value_.erase(0, length);
     return true;

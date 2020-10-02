@@ -28,34 +28,27 @@
 
 #include <assert.h>
 
-#include <sstream>
 #include <iostream>
+#include <sstream>
 
 #include "graph.h"
 #include "stream.h"
 #include "stream_reader.h"
 
 #ifdef MEDIAGRAPH_USE_EASY_PROFILER
-    #include <easy/profiler.h>
+#include <easy/profiler.h>
 #endif
 
 namespace media_graph {
+NodeBase::NodeBase() : graph_(nullptr), running_(false), stopping_(false) {}
 
-NodeBase::NodeBase() : graph_(nullptr), running_(false), stopping_(false) { }
-
-NodeBase::~NodeBase() {
-    detach();
-}
+NodeBase::~NodeBase() { detach(); }
 
 bool NodeBase::start() {
     std::unique_lock<std::mutex> lock(stop_event_mutex_);
-    if (running_) {
-        return true;
-    }
+    if (running_) { return true; }
 
-    if (!allPinsConnected()) {
-        return false;
-    }
+    if (!allPinsConnected()) { return false; }
     openAllStreams();
     openConnectedPins();
     running_ = true;
@@ -69,7 +62,7 @@ void NodeBase::stop() {
     disconnectAllPins();
     if (running_) {
         running_ = false;
-        //lock.unlock();
+        // lock.unlock();
 
         closeAllStreams();
 
@@ -79,17 +72,13 @@ void NodeBase::stop() {
     stopping_ = false;
 }
 
-bool NodeBase::isRunning() const {
-    return running_;
-}
+bool NodeBase::isRunning() const { return running_; }
 
 void NodeBase::waitForPinActivity() const {
     std::unique_lock<std::mutex> lock(pin_activity_mutex_);
     for (int i = 0; i < numInputPin(); ++i) {
         const auto pin = inputPin(i);
-        if (pin->canRead() || !pin->connectedAndOpen()) {
-            return;
-        }
+        if (pin->canRead() || !pin->connectedAndOpen()) { return; }
     }
 
 #ifdef MEDIAGRAPH_USE_EASY_PROFILER
@@ -99,18 +88,15 @@ void NodeBase::waitForPinActivity() const {
 }
 
 void NodeBase::waitUntilStopped() {
-    if (!this->running_) {
-        return;
-    }
+    if (!this->running_) { return; }
     std::unique_lock<std::mutex> lock(stop_event_mutex_);
-    stop_event_.wait(lock, [this]{ return !this->running_; });
+    stop_event_.wait(lock, [this] { return !this->running_; });
 }
 
 bool NodeBase::allPinsConnected() const {
     int num_pins = numInputPin();
     for (int i = 0; i < num_pins; ++i) {
-        if (!constInputPin(i)->isConnected())
-            return false;
+        if (!constInputPin(i)->isConnected()) return false;
     }
     return true;
 }
@@ -119,18 +105,14 @@ bool NodeBase::allPinsConnectedAndOpen() const {
     int num_pins = numInputPin();
     for (int i = 0; i < num_pins; ++i) {
         const NamedStream* stream = constInputPin(i)->connectedStream();
-        if (!stream || !stream->isOpen()) {
-            return false;
-        }
+        if (!stream || !stream->isOpen()) { return false; }
     }
     return true;
 }
 
 void NodeBase::disconnectAllPins() {
     int num_pins = numInputPin();
-    for (int i = 0; i < num_pins; ++i) {
-        inputPin(i)->disconnect();
-    }
+    for (int i = 0; i < num_pins; ++i) { inputPin(i)->disconnect(); }
 }
 
 void NodeBase::openConnectedPins() {
@@ -143,33 +125,25 @@ void NodeBase::openConnectedPins() {
 
 void NodeBase::closeConnectedPins() {
     int num_pins = numInputPin();
-     for (int i = 0; i < num_pins; ++i) {
-        NamedStream *stream = inputPin(i)->connectedStream();
-		if (stream) {
-			stream->close();
-		}
+    for (int i = 0; i < num_pins; ++i) {
+        NamedStream* stream = inputPin(i)->connectedStream();
+        if (stream) { stream->close(); }
     }
 }
 
 void NodeBase::disconnectAllStreams() {
     int num_streams = numOutputStream();
-    for (int i = 0; i < num_streams; ++i) {
-        outputStream(i)->disconnectReaders();
-    }
+    for (int i = 0; i < num_streams; ++i) { outputStream(i)->disconnectReaders(); }
 }
 
 void NodeBase::openAllStreams() {
     int num_streams = numOutputStream();
-    for (int i = 0; i < num_streams; ++i) {
-        outputStream(i)->open();
-    }
+    for (int i = 0; i < num_streams; ++i) { outputStream(i)->open(); }
 }
 
 void NodeBase::closeAllStreams() {
     int num_streams = numOutputStream();
-    for (int i = 0; i < num_streams; ++i) {
-        outputStream(i)->close();
-    }
+    for (int i = 0; i < num_streams; ++i) { outputStream(i)->close(); }
 }
 
 bool NodeBase::setNameAndGraph(const std::string& new_name, Graph* new_graph) {
@@ -193,11 +167,9 @@ void NodeBase::detach() {
 NamedStream* NodeBase::getOutputStreamByName(const std::string& name) {
     int num_streams = numOutputStream();
     for (int i = 0; i < num_streams; ++i) {
-        NamedStream *stream = outputStream(i);
-		assert(stream != 0);
-        if (stream && (name == stream->streamName())) {
-            return stream;
-        }
+        NamedStream* stream = outputStream(i);
+        assert(stream != 0);
+        if (stream && (name == stream->streamName())) { return stream; }
     }
     return 0;
 }
@@ -205,27 +177,21 @@ NamedStream* NodeBase::getOutputStreamByName(const std::string& name) {
 NamedPin* NodeBase::getInputPinByName(const std::string& name) {
     int num_pins = numInputPin();
     for (int i = 0; i < num_pins; ++i) {
-        NamedPin *pin = inputPin(i);
-		assert(pin != 0);
-        if (pin && (name == pin->name())) {
-            return pin;
-        }
+        NamedPin* pin = inputPin(i);
+        assert(pin != 0);
+        if (pin && (name == pin->name())) { return pin; }
     }
     return 0;
 }
 
 ThreadedNodeBase::~ThreadedNodeBase() {
-    //graph()->removeNode(this);
+    // graph()->removeNode(this);
 }
 
 bool ThreadedNodeBase::start() {
-    if (isRunning()) {
-        return true;
-    }
+    if (isRunning()) { return true; }
 
-    if (!NodeBase::start()) {
-        return false;
-    }
+    if (!NodeBase::start()) { return false; }
 
     if (startThread()) {
         return true;
@@ -238,32 +204,24 @@ bool ThreadedNodeBase::start() {
 bool ThreadedNodeBase::startThread() {
     thread_must_quit_ = false;
     creating_thread_id_ = std::this_thread::get_id();
-    if (thread_.start(threadEntryPoint, this)) {
-        return true;
-    }
+    if (thread_.start(threadEntryPoint, this)) { return true; }
     return false;
 }
 
 void ThreadedNodeBase::stop() {
     thread_must_quit_ = true;
     NodeBase::stop();
-    if (creating_thread_id_ == std::this_thread::get_id()) {
-      thread_.waitForTermination();
-    }
+    if (creating_thread_id_ == std::this_thread::get_id()) { thread_.waitForTermination(); }
 }
 
-bool ThreadedNodeBase::isRunning() const {
-    return NodeBase::isRunning() && thread_.isRunning();
-}
+bool ThreadedNodeBase::isRunning() const { return NodeBase::isRunning() && thread_.isRunning(); }
 
 void ThreadedNodeBase::waitUntilStopped() {
     NodeBase::waitUntilStopped();
-    if (creating_thread_id_ == std::this_thread::get_id()) {
-      thread_.waitForTermination();
-    }
+    if (creating_thread_id_ == std::this_thread::get_id()) { thread_.waitForTermination(); }
 }
 
-void ThreadedNodeBase::threadEntryPoint(void *ptr) {
+void ThreadedNodeBase::threadEntryPoint(void* ptr) {
     ThreadedNodeBase* instance = static_cast<ThreadedNodeBase*>(ptr);
 
 #ifdef MEDIAGRAPH_USE_EASY_PROFILER
@@ -273,8 +231,8 @@ void ThreadedNodeBase::threadEntryPoint(void *ptr) {
     try {
         instance->threadMain();
     } catch (std::exception& e) {
-        std::cerr << "Uncaught top-level exception in mediagraph thread, node: "
-            << instance->name() << ": exception: " << e.what() << std::endl;
+        std::cerr << "Uncaught top-level exception in mediagraph thread, node: " << instance->name()
+                  << ": exception: " << e.what() << std::endl;
     }
 
     NodeBase* base = static_cast<NodeBase*>(instance);
@@ -283,4 +241,3 @@ void ThreadedNodeBase::threadEntryPoint(void *ptr) {
 }
 
 }  // namespace media_graph
-

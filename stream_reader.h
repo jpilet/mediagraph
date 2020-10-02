@@ -29,27 +29,26 @@
 
 #include <string>
 
-#include "stream.h"
 #include "node.h"
 #include "property.h"
+#include "stream.h"
 
 namespace media_graph {
-
 class NodeBase;
 
 /*! Type-agnostic plug to any StreamBase. Has a name.
  */
 class NamedPin : public PropertyList {
-  public:
-    NamedPin(const std::string& name, NodeBase *node) : name_(name), node_(node) { }
-    virtual ~NamedPin() { }
+public:
+    NamedPin(const std::string& name, NodeBase* node) : name_(name), node_(node) {}
+    virtual ~NamedPin() {}
     const std::string& name() const { return name_; }
 
     virtual std::string typeName() const = 0;
     virtual bool connect(NamedStream* stream) = 0;
     virtual void disconnect() = 0;
     virtual bool isConnected() const = 0;
-    virtual NamedStream *connectedStream() const = 0;
+    virtual NamedStream* connectedStream() const = 0;
     virtual bool canRead() const = 0;
 
     bool connectedAndOpen() const {
@@ -63,13 +62,16 @@ class NamedPin : public PropertyList {
     NodeBase* node() const { return node_; }
 
     // This is called by the connected stream when new data arrive.
-    void signalActivity() const { if (node_) node_->signalActivity(); }
+    void signalActivity() const {
+        if (node_) node_->signalActivity();
+    }
 
     SequenceId lastReadSequenceId() const { return last_read_sequence_id_; }
-  protected:
+
+protected:
     SequenceId last_read_sequence_id_;
 
-  private:
+private:
     std::string name_;
     NodeBase* node_;
 };
@@ -79,10 +81,9 @@ class NamedPin : public PropertyList {
  *  Of course, if Graph::connect() has not been called properly, reading will
  *  fail.
  */
-template <typename T>
-class StreamReader : public NamedPin {
-  public:
-    StreamReader(const std::string& name, NodeBase *node);
+template <typename T> class StreamReader : public NamedPin {
+public:
+    StreamReader(const std::string& name, NodeBase* node);
     virtual ~StreamReader();
 
     bool read(T* data, Timestamp* timestamp, SequenceId* seq = 0);
@@ -100,12 +101,20 @@ class StreamReader : public NamedPin {
     virtual bool connect(NamedStream* stream);
     virtual void disconnect();
 
-    virtual void openConnectedStream() { if (isConnected()) pointer_->open(); }
-    virtual void closeConnectedStream() { if (isConnected()) pointer_->close(); }
+    virtual void openConnectedStream() {
+        if (isConnected()) pointer_->open();
+    }
+    virtual void closeConnectedStream() {
+        if (isConnected()) pointer_->close();
+    }
 
-    virtual NamedStream *connectedStream() const { return pointer_; }
-    virtual void open() { if (isConnected()) pointer_->open(); }
-    virtual void close() { if (isConnected()) pointer_->close(); }
+    virtual NamedStream* connectedStream() const { return pointer_; }
+    virtual void open() {
+        if (isConnected()) pointer_->open();
+    }
+    virtual void close() {
+        if (isConnected()) pointer_->close();
+    }
 
     virtual bool isConnected() const { return pointer_ != 0; }
 
@@ -114,23 +123,20 @@ class StreamReader : public NamedPin {
     // Public, but should only be accessed by classes inheriting StreamBase<T>.
     SequenceId* lastReadSequenceIdPtr() { return &last_read_sequence_id_; }
 
-  private:
+private:
     StreamBase<T>* pointer_;
     Timestamp seek_;
 };
 
 template <typename T>
-StreamReader<T>::StreamReader(const std::string& name, NodeBase* node)
-    : NamedPin(name, node) {
+StreamReader<T>::StreamReader(const std::string& name, NodeBase* node) : NamedPin(name, node) {
     pointer_ = 0;
     seek_ = Timestamp::microSecondsSince1970(0);
 }
 
-template <typename T>
-StreamReader<T>::~StreamReader() { disconnect(); }
+template <typename T> StreamReader<T>::~StreamReader() { disconnect(); }
 
-template <typename T>
-bool StreamReader<T>::read(T* data, Timestamp* timestamp, SequenceId* seq) {
+template <typename T> bool StreamReader<T>::read(T* data, Timestamp* timestamp, SequenceId* seq) {
     return (pointer_ && pointer_->read(this, data, timestamp, seq));
 }
 
@@ -139,36 +145,30 @@ bool StreamReader<T>::tryRead(T* data, Timestamp* timestamp, SequenceId* seq) {
     return (pointer_ && pointer_->tryRead(this, data, timestamp, seq));
 }
 
-template <typename T>
-bool StreamReader<T>::canRead() const {
+template <typename T> bool StreamReader<T>::canRead() const {
     return pointer_ && pointer_->canRead(last_read_sequence_id_, seek_);
 }
 
-template <typename T>
-std::string StreamReader<T>::typeName() const {
+template <typename T> std::string StreamReader<T>::typeName() const {
     return media_graph::typeName<T>();
 }
 
-template <typename T>
-void StreamReader<T>::disconnect() {
+template <typename T> void StreamReader<T>::disconnect() {
     if (pointer_) {
         // We make sure isConnected() reports false
         // before unregistering.
         StreamBase<T>* pointer_copy = pointer_;
         pointer_ = 0;
         pointer_copy->unregisterReader(this);
-        if (node()) {
-            node()->stop();
-        }
+        if (node()) { node()->stop(); }
     }
 }
 
-template <typename T>
-bool StreamReader<T>::connect(NamedStream* stream) {
-    //if (this == 0) return false;
+template <typename T> bool StreamReader<T>::connect(NamedStream* stream) {
+    // if (this == 0) return false;
     disconnect();
     if (typeName() == stream->typeName()) {
-        pointer_ = dynamic_cast<StreamBase<T>* >(stream);
+        pointer_ = dynamic_cast<StreamBase<T>*>(stream);
         if (pointer_) {
             pointer_->registerReader(this);
             last_read_sequence_id_ = -1;
@@ -177,8 +177,7 @@ bool StreamReader<T>::connect(NamedStream* stream) {
     return pointer_ != 0;
 }
 
-template <typename T>
-bool StreamReader<T>::seek(Timestamp timestamp) {
+template <typename T> bool StreamReader<T>::seek(Timestamp timestamp) {
     if (!(timestamp < seek_)) {
         seek_ = timestamp;
         return true;
