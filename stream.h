@@ -48,6 +48,7 @@
 #endif
 
 namespace media_graph {
+
 class NodeBase;
 
 typedef int64_t SequenceId;
@@ -82,6 +83,7 @@ protected:
     void lock() const { mutex_.lock(); }
     void unlock() const { mutex_.unlock(); }
     virtual void markReadAfter(SequenceId /*seq*/){};
+    virtual void decreaseReadCountUntil(SequenceId /*seq*/){};
 
 private:
     std::vector<NamedPin*> readers_;
@@ -189,7 +191,8 @@ protected:
     virtual bool tryRead(StreamReader<T>* reader, T* data, Timestamp* timestamp, SequenceId* seq);
     virtual bool canRead(SequenceId consumed_until, Timestamp fresher_than) const;
 
-    virtual void markReadAfter(SequenceId seq);
+    void markReadAfter(SequenceId seq) override;
+    void decreaseReadCountUntil(SequenceId seq) override;
 
 private:
     struct Entry {
@@ -209,16 +212,12 @@ private:
                           Timestamp* timestamp, SequenceId* seq);
     bool findEntry(SequenceId consumed_until, Timestamp fresher_than) const;
     void dropEntries();
-    int numLostAndActiveReaders() const { return this->numReaders() + num_lost_readers_; }
 
     std::deque<Entry> buffer_;
     int queue_limit_;
     bool closed_;
     std::condition_variable data_available_;
     std::condition_variable slot_available_;
-
-    // The number of readers that disconnected while the stream was operating.
-    int num_lost_readers_;
 
     // Counts the number of calls to update() since last stream opening. Used
     // to assign a unique and monotonic sequence id to each frame.
@@ -235,7 +234,6 @@ Stream<T>::Stream(const std::string& name, NodeBase* node, StreamDropPolicy drop
     : StreamBase<T>(name, node),
       queue_limit_(max_queue_size),
       closed_(false),
-      num_lost_readers_(0),
       next_sequence_id_(0),
       drop_policy_(drop_policy),
       last_written_timestamp_(Timestamp::microSecondsSince1970(0)) {
@@ -274,7 +272,7 @@ bool Stream<T>::findAndReadEntry(Timestamp fresher_than, SequenceId* consumed_un
                 if (seq) { *seq = it->sequence_id; }
                 found = true;  // Exit loop.
                 if ((drop_policy_ & DROP_READ_BY_ALL_READERS) != 0 &&
-                    it->num_reads >= this->numLostAndActiveReaders()) {
+                    it->num_reads >= this->numReaders()) {
                     it = buffer_.erase(it);
                     incremented = true;
                     slot_available_.notify_one();
@@ -334,6 +332,13 @@ template <class T> void Stream<T>::markReadAfter(SequenceId seq) {
     dropEntries();
 }
 
+template <class T> void Stream<T>::decreaseReadCountUntil(SequenceId seq) {
+    for (typename std::deque<Entry>::iterator it = buffer_.begin(); it != buffer_.end(); ++it) {
+        if (it->sequence_id <= seq) { --(it->num_reads); }
+    }
+    dropEntries();
+}
+
 template <class T> void Stream<T>::dropEntries() {
     assert(drop_policy_ & (DROP_ANY | DROP_ZERO_READS | DROP_READ_BY_ALL_READERS));
     if (buffer_.size() == 0) {
@@ -344,7 +349,7 @@ template <class T> void Stream<T>::dropEntries() {
         for (typename std::deque<Entry>::iterator it = buffer_.begin(); it != buffer_.end();) {
             if (((drop_policy_ & DROP_ZERO_READS) != 0 && it->num_reads == 0) ||
                 ((drop_policy_ & DROP_READ_BY_ALL_READERS) != 0 &&
-                 it->num_reads >= this->numLostAndActiveReaders())) {
+                 it->num_reads >= this->numReaders())) {
                 it = buffer_.erase(it);
 
                 if (buffer_.size() < static_cast<unsigned>(queue_limit_)) {
@@ -401,10 +406,9 @@ template <class T> bool Stream<T>::update(Timestamp timestamp, T data) {
 
             if (interested > 0) {
                 // There is at least 1 reader that does not want to skip the
-                // entry: let's push it. Lost readers are considered as not
-                // interested.
-                buffer_.push_back(Entry(timestamp, sequence_id, data,
-                                        this->numLostAndActiveReaders() - interested));
+                // entry: let's push it.
+                buffer_.push_back(
+                    Entry(timestamp, sequence_id, data, this->numReaders() - interested));
                 data_available_.notify_all();
             }
             success = true;
@@ -426,17 +430,12 @@ template <class T> void Stream<T>::close() {
 }
 
 template <class T> void Stream<T>::open() {
-    if (closed_) {
-        num_lost_readers_ = 0;
-        next_sequence_id_ = 0;
-    }
+    if (closed_) { next_sequence_id_ = 0; }
     closed_ = false;
 }
 
 template <class T> bool Stream<T>::unregisterReader(NamedPin* reader) {
     if (NamedStream::unregisterReader(reader)) {
-        ++num_lost_readers_;
-
         // The disconnected reader might be waiting.
         // Let's wake it.
         static_cast<StreamReader<T>*>(reader)->signalActivity();
