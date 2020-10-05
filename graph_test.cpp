@@ -382,11 +382,19 @@ TEST(GraphTest, shouldNoticeWhenStopped) {
     EXPECT_FALSE(graph.isStarted());
 }
 
+struct IntConsumerWithCount {
+    IntConsumerWithCount(std::shared_ptr<ThreadedIntConsumer> ptr, size_t cnt)
+        : consumer(std::move(ptr)), count(cnt) {}
+    std::shared_ptr<ThreadedIntConsumer> consumer;
+    size_t count;
+};
+
 TEST(GraphTest, shouldAddAndRemoveNodesWhileRunning) {
     Graph graph;
     auto producer = graph.newNode<ThreadedIntProducer>("producer");
 
     std::vector<std::shared_ptr<ThreadedIntConsumer>> consumers;
+    std::vector<IntConsumerWithCount> deletedConsumers;
 
     std::mt19937 gen(42);
     std::uniform_int_distribution<> dice6(1, 6);
@@ -397,8 +405,10 @@ TEST(GraphTest, shouldAddAndRemoveNodesWhileRunning) {
     EXPECT_TRUE(graph.start());
     for (Timestamp endTime = Timestamp::now() + Duration::seconds(5); Timestamp::now() < endTime;
          Duration::milliSeconds(3).sleep()) {
-        switch (dice6(gen)) {
-            case 1: {
+        auto random = dice6(gen);
+        switch (random) {
+            case 1:
+            case 2: {
                 // create a new consumer
                 std::stringstream ss;
                 ss << "consumer_" << nextId++;
@@ -408,7 +418,8 @@ TEST(GraphTest, shouldAddAndRemoveNodesWhileRunning) {
                 EXPECT_TRUE(graph.connect(producer, "out", consumer, "in"));
                 break;
             }
-            case 2:
+            case 3:
+            case 4:
                 if (!consumers.empty()) {
                     // randomly kill a consumer
                     auto it = consumers.begin() + std::uniform_int_distribution<long>(
@@ -417,6 +428,12 @@ TEST(GraphTest, shouldAddAndRemoveNodesWhileRunning) {
                     pin->disconnect();
                     totalConsumed += (*it)->consumed();
                     graph.removeNode((*it)->name());
+
+                    // Randomly either stop and destroy the consumer or
+                    // Keep it running and check that it does not receive
+                    // any further data.
+                    // This way, we test both stopping during graph execution and after graph stop.
+                    if (random == 3) { deletedConsumers.emplace_back(*it, (*it)->consumed()); }
                     consumers.erase(it);
                 }
                 break;
@@ -426,6 +443,12 @@ TEST(GraphTest, shouldAddAndRemoveNodesWhileRunning) {
         EXPECT_EQ(consumers.size(), producer->outputStream(0)->numReaders());
         maxConsumers = std::max(maxConsumers, consumers.size());
     }
+
+    EXPECT_GT(deletedConsumers.size(), 0);
+
+    for (const auto& it : deletedConsumers) { EXPECT_EQ(it.count, it.consumer->consumed()); }
+    deletedConsumers.clear();
+
     EXPECT_TRUE(graph.isStarted());
     for (auto consumer : consumers) { graph.removeNode(consumer->name()); }
     consumers.clear();

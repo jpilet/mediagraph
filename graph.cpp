@@ -116,8 +116,8 @@ void Graph::stop() {
 }
 
 void Graph::lockedStop() {
-    for (auto it = nodes_.begin(); it != nodes_.end(); ++it) { it->second->closeConnectedPins(); }
-    for (auto it = nodes_.begin(); it != nodes_.end(); ++it) { it->second->stop(); }
+    for (auto it : nodes_) { it.second->closeConnectedPins(); }
+    for (auto it : nodes_) { it.second->stop(); }
     started_ = false;
 }
 
